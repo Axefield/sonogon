@@ -4,6 +4,7 @@ export interface PlasmaParams {
     ionizationPotential_Xe: number;
     ionizationPotential_H: number;
     ionizationPotential_O: number;
+    ionizationPotential_N?: number;
     recombinationCoeff: number;
     electronCollisionFreq: number;
     useDetailedCollisions?: boolean;

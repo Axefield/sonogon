@@ -12,6 +12,7 @@ export interface EmCavityParams {
     QFrequencyDependence?: (omega: number) => number;
     useDetailedParametricPumping?: boolean;
     parametricCoupling?: number;
+    thermoGamma?: number;
 }
 export interface EmDerivatives {
     dModes: {
@@ -32,5 +33,7 @@ export interface EmDerivatives {
  * - Pump term: α * |Rdot| * |gradient_terms|
  * - Decay term: -E_em / τ
  */
-export declare function computeEmDerivatives(state: BubbleFullState, params: EmCavityParams): EmDerivatives;
+export declare function computeEmDerivatives(state: BubbleFullState, params: EmCavityParams & {
+    thermoGamma?: number;
+}): EmDerivatives;
 //# sourceMappingURL=emCavity.d.ts.map

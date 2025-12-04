@@ -6,8 +6,10 @@ exports.computeAcousticState = computeAcousticState;
  * - Single frequency (backward compatible)
  * - Multi-frequency driving
  * - Non-sinusoidal waveforms
+ * - Spatial gradients using actual bubble position
  */
-function computeAcousticState(t, acoustic, params) {
+function computeAcousticState(t, acoustic, params, bubblePosition // Optional: actual bubble position
+) {
     // Determine primary frequency for phase evolution
     let primaryOmega = params.omega || 0;
     if (params.frequencies && params.frequencies.length > 0) {
@@ -54,9 +56,8 @@ function computeAcousticState(t, acoustic, params) {
         const k = params.waveVector || { x: 0, y: 0, z: 0 };
         const k_mag = Math.sqrt(k.x * k.x + k.y * k.y + k.z * k.z);
         if (k_mag > 0) {
-            // Compute phase at bubble position (if translation enabled)
-            // For now, assume bubble at origin
-            const bubblePos = { x: 0, y: 0, z: 0 }; // TODO: get from state.translation
+            // Compute phase at bubble position (use actual position if available)
+            const bubblePos = bubblePosition || { x: 0, y: 0, z: 0 };
             const k_dot_r = k.x * bubblePos.x + k.y * bubblePos.y + k.z * bubblePos.z;
             const phase_spatial = k_dot_r - primaryOmega * t;
             // Gradient
@@ -85,14 +86,49 @@ function computeAcousticState(t, acoustic, params) {
         // Standing wave pattern (if specified)
         if (params.standingWave && params.nodePosition) {
             const node = params.nodePosition;
-            // Standing wave: P = P₀ * sin(k·r) * sin(ωt)
-            // Gradient: ∇P = P₀ * k * cos(k·r) * sin(ωt)
-            // For simplicity, use simplified form
+            const bubblePos = bubblePosition || { x: 0, y: 0, z: 0 };
+            // Standing wave: P = P₀ * sin(k·(r - r_node)) * sin(ωt)
+            // where r_node is the node position
+            // 
+            // Gradient: ∇P = P₀ * k * cos(k·(r - r_node)) * sin(ωt)
+            // Laplacian: ∇²P = -P₀ * k² * sin(k·(r - r_node)) * sin(ωt)
+            // Position relative to node
+            const r_rel = {
+                x: bubblePos.x - node.x,
+                y: bubblePos.y - node.y,
+                z: bubblePos.z - node.z,
+            };
+            // Wave vector dot product with relative position
+            const k_dot_r_rel = k.x * r_rel.x + k.y * r_rel.y + k.z * r_rel.z;
+            // Standing wave factors
+            const sin_spatial = Math.sin(k_dot_r_rel);
+            const cos_spatial = Math.cos(k_dot_r_rel);
+            const sin_temporal = Math.sin(primaryOmega * t);
             if (gradient) {
-                const standing_factor = Math.sin(primaryOmega * t);
-                gradient.x *= standing_factor;
-                gradient.y *= standing_factor;
-                gradient.z *= standing_factor;
+                // Proper standing wave gradient
+                if (params.frequencies && params.frequencies.length > 0) {
+                    const P0 = params.frequencies[0].amplitude;
+                    gradient = {
+                        x: P0 * k.x * cos_spatial * sin_temporal,
+                        y: P0 * k.y * cos_spatial * sin_temporal,
+                        z: P0 * k.z * cos_spatial * sin_temporal,
+                    };
+                }
+                else if (params.Pa !== undefined) {
+                    gradient = {
+                        x: params.Pa * k.x * cos_spatial * sin_temporal,
+                        y: params.Pa * k.y * cos_spatial * sin_temporal,
+                        z: params.Pa * k.z * cos_spatial * sin_temporal,
+                    };
+                }
+                // Update laplacian for standing wave
+                if (params.frequencies && params.frequencies.length > 0) {
+                    const P0 = params.frequencies[0].amplitude;
+                    laplacian = -P0 * k_mag * k_mag * sin_spatial * sin_temporal;
+                }
+                else if (params.Pa !== undefined) {
+                    laplacian = -params.Pa * k_mag * k_mag * sin_spatial * sin_temporal;
+                }
             }
         }
     }

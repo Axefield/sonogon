@@ -56,24 +56,58 @@ function computePlasmaDerivatives(state, params) {
     // Volume change rate
     const volumeChangeRate = 3.0 * Rdot / R_safe;
     // Compute equilibrium electron density from Saha equation
-    // Use dominant species (Ar or Xe typically)
+    // Use all ionizable species with proper weighting
     const n_Ar = state.species.numberDensity.Ar;
     const n_Xe = state.species.numberDensity.Xe;
     const n_H = state.species.numberDensity.H;
     const n_O = state.species.numberDensity.O;
-    // Weighted average ionization potential (simplified)
-    const totalNeutral = n_Ar + n_Xe + n_H + n_O;
+    const n_N = state.species.numberDensity.N || 0;
+    const n_OH = state.species.numberDensity.OH || 0;
+    // Compute Saha equilibrium for each species separately, then combine
+    // This is more accurate than using a weighted average
+    let n_e_equilibrium_total = 0;
+    let totalNeutral = 0;
+    // Argon
+    if (n_Ar > 0) {
+        const n_e_Ar = computeSahaEquilibrium(T, n_Ar, params.ionizationPotential_Ar);
+        n_e_equilibrium_total += n_e_Ar;
+        totalNeutral += n_Ar;
+    }
+    // Xenon
+    if (n_Xe > 0) {
+        const n_e_Xe = computeSahaEquilibrium(T, n_Xe, params.ionizationPotential_Xe);
+        n_e_equilibrium_total += n_e_Xe;
+        totalNeutral += n_Xe;
+    }
+    // Hydrogen
+    if (n_H > 0) {
+        const n_e_H = computeSahaEquilibrium(T, n_H, params.ionizationPotential_H);
+        n_e_equilibrium_total += n_e_H;
+        totalNeutral += n_H;
+    }
+    // Oxygen
+    if (n_O > 0) {
+        const n_e_O = computeSahaEquilibrium(T, n_O, params.ionizationPotential_O);
+        n_e_equilibrium_total += n_e_O;
+        totalNeutral += n_O;
+    }
+    // Nitrogen (if available)
+    if (n_N > 0 && params.ionizationPotential_N !== undefined) {
+        const n_e_N = computeSahaEquilibrium(T, n_N, params.ionizationPotential_N);
+        n_e_equilibrium_total += n_e_N;
+        totalNeutral += n_N;
+    }
+    // Weighted average ionization potential for rate calculations
     let weightedIonizationPotential = 0;
     if (totalNeutral > 0) {
         weightedIonizationPotential = (n_Ar * params.ionizationPotential_Ar +
             n_Xe * params.ionizationPotential_Xe +
             n_H * params.ionizationPotential_H +
-            n_O * params.ionizationPotential_O) / totalNeutral;
+            n_O * params.ionizationPotential_O +
+            (n_N * (params.ionizationPotential_N || 14.5)) // N ionization potential ~14.5 eV
+        ) / totalNeutral;
     }
-    // Equilibrium electron density from Saha equation
-    const n_e_equilibrium = totalNeutral > 0
-        ? computeSahaEquilibrium(T, totalNeutral, weightedIonizationPotential)
-        : 0;
+    const n_e_equilibrium = n_e_equilibrium_total;
     // Ionization and recombination rates
     let ionizationRate = 0;
     let recombinationRate = 0;
@@ -90,15 +124,31 @@ function computePlasmaDerivatives(state, params) {
         const ionizationRateCoeff = sigma_0 * v_th_e * Math.exp(-weightedIonizationPotential / (units_1.Constants.k_B * Te));
         ionizationRate = ne * totalNeutral * ionizationRateCoeff;
         // Recombination rates (multiple channels)
+        // Compute actual ion density from ionization fraction
+        const ionizationFraction = state.plasma.ionizationFraction;
+        const n_ions = totalNeutral * Math.max(0, Math.min(1, ionizationFraction)); // Clamp to [0,1]
         // 1. Radiative recombination: e + A⁺ → A + photon
-        const alpha_rad = 2.6e-19 * Math.pow(Te / 10000, -0.5); // Approximate [m³/s]
-        const recombination_radiative = alpha_rad * ne * (totalNeutral * 0.1); // Assume 10% ions
+        // Rate coefficient depends on species and temperature
+        // For Ar: α_rad ≈ 2.6e-19 * (Te/10000)^(-0.5) [m³/s]
+        // For Xe: α_rad ≈ 3.0e-19 * (Te/10000)^(-0.5) [m³/s]
+        // Weighted by species fraction
+        const Ar_fraction = totalNeutral > 0 ? n_Ar / totalNeutral : 0;
+        const Xe_fraction = totalNeutral > 0 ? n_Xe / totalNeutral : 0;
+        const alpha_rad_Ar = 2.6e-19 * Math.pow(Te / 10000, -0.5);
+        const alpha_rad_Xe = 3.0e-19 * Math.pow(Te / 10000, -0.5);
+        const alpha_rad = Ar_fraction * alpha_rad_Ar + Xe_fraction * alpha_rad_Xe +
+            (1 - Ar_fraction - Xe_fraction) * alpha_rad_Ar; // Default to Ar
+        const recombination_radiative = alpha_rad * ne * n_ions;
         // 2. Three-body recombination: e + e + A⁺ → e + A
-        const alpha_3body = 1e-32 * Math.pow(Te / 10000, -4.5); // Approximate [m⁶/s]
-        const n_ions = totalNeutral * 0.1; // Simplified: assume 10% ionization
-        const recombination_3body = alpha_3body * ne * ne * n_ions;
-        // 3. Dielectronic recombination (for high Z): e + A⁺ → A**
-        const alpha_diel = 1e-20 * Math.pow(Te / 10000, -1.5); // Approximate [m³/s]
+        // More important at high density
+        const alpha_3body = 1e-32 * Math.pow(Te / 10000, -4.5); // [m⁶/s]
+        const n_total = Object.values(state.species.numberDensity).reduce((sum, n) => sum + n, 0);
+        const recombination_3body = alpha_3body * ne * ne * n_ions * (n_total / 1e25); // Density-dependent
+        // 3. Dielectronic recombination (for high Z like Xe): e + A⁺ → A**
+        // More important for heavy elements
+        const alpha_diel = Xe_fraction > 0.1
+            ? 1e-20 * Math.pow(Te / 10000, -1.5) * Xe_fraction // Xe has strong dielectronic recombination
+            : 1e-22 * Math.pow(Te / 10000, -1.5); // Smaller for Ar
         const recombination_diel = alpha_diel * ne * n_ions;
         recombinationRate = recombination_radiative + recombination_3body + recombination_diel;
     }

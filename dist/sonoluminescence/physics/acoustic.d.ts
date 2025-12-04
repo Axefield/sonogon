@@ -37,6 +37,11 @@ export interface AcousticDerivatives {
  * - Single frequency (backward compatible)
  * - Multi-frequency driving
  * - Non-sinusoidal waveforms
+ * - Spatial gradients using actual bubble position
  */
-export declare function computeAcousticState(t: number, acoustic: AcousticState, params: AcousticParams): AcousticDerivatives;
+export declare function computeAcousticState(t: number, acoustic: AcousticState, params: AcousticParams, bubblePosition?: {
+    x: number;
+    y: number;
+    z: number;
+}): AcousticDerivatives;
 //# sourceMappingURL=acoustic.d.ts.map

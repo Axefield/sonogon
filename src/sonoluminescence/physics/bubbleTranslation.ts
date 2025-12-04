@@ -20,6 +20,17 @@ export interface BubbleTranslationParams {
   // Acoustic field parameters
   acousticGradient?: { x: number; y: number; z: number };  // ∇P_acoustic [Pa/m]
   acousticLaplacian?: number;  // ∇²P_acoustic [Pa/m²]
+  
+  // Buoyancy force
+  enableBuoyancy?: boolean; // Enable buoyancy force calculation
+  gravity?: number; // Gravity acceleration [m/s²] (default: 9.81)
+  
+  // Secondary Bjerknes force
+  enableSecondaryBjerknes?: boolean; // Enable secondary Bjerknes force
+  otherBubbles?: Array<{
+    position: { x: number; y: number; z: number };
+    volume: number;
+  }>; // Other bubbles for interaction
 }
 
 export interface BubbleTranslationDerivatives {
@@ -154,9 +165,86 @@ export function computeBubbleTranslationDerivatives(
   fy_total += F_drag.fy;
   fz_total += F_drag.fz;
   
-  // 3. Buoyancy (optional, if gravity included)
-  // F_buoyancy = (ρ_liquid - ρ_gas) * V * g
-  // For now, assume neutral buoyancy (gas density << liquid)
+  // 3. Buoyancy force (if enabled)
+  if (params.enableBuoyancy) {
+    const g = params.gravity || 9.81; // Gravity [m/s²]
+    
+    // Compute gas density from ideal gas law: ρ_gas = P * M_avg / (R * T)
+    const { Pg, T } = state.gas;
+    const { numberDensity } = state.species;
+    
+    // Compute average molecular weight
+    // M_avg = Σ(n_i * M_i) / Σ(n_i)
+    const speciesMolarMasses: Record<string, number> = {
+      H2O: 0.018015,  // kg/mol
+      O2: 0.031999,
+      N2: 0.028014,
+      Ar: 0.039948,
+      Xe: 0.131293,
+      H: 0.001008,
+      O: 0.015999,
+      OH: 0.017007,
+      N: 0.014007,
+    };
+    
+    let totalMoles = 0;
+    let totalMass = 0;
+    
+    for (const [species, density] of Object.entries(numberDensity)) {
+      const n_moles = density * V; // Number of moles
+      const M = speciesMolarMasses[species] || 0.03; // Default ~air
+      totalMoles += n_moles;
+      totalMass += n_moles * M;
+    }
+    
+    // Gas density: ρ_gas = total_mass / V = (Σ n_i * M_i) / V
+    const rho_gas = totalMoles > 0 ? totalMass / V : 0;
+    
+    // Alternative: use ideal gas law if we have pressure and temperature
+    // ρ_gas = P * M_avg / (R * T)
+    const M_avg = totalMoles > 0 ? totalMass / totalMoles : 0.03;
+    const rho_gas_ideal = (Pg * M_avg) / (Constants.R_gas * T);
+    
+    // Use ideal gas law result (more accurate for high pressure)
+    const rho_gas_final = rho_gas_ideal;
+    
+    // Buoyancy force: F_buoyancy = (ρ_liquid - ρ_gas) * V * g
+    const F_buoyancy = (rho - rho_gas_final) * V * g;
+    
+    // Buoyancy acts upward (positive z direction)
+    fz_total += F_buoyancy;
+  }
+  
+  // 4. Secondary Bjerknes force (bubble-bubble interactions)
+  if (params.enableSecondaryBjerknes && params.otherBubbles && params.acousticLaplacian !== undefined) {
+    const laplacianP = params.acousticLaplacian;
+    
+    for (const otherBubble of params.otherBubbles) {
+      // Distance vector from this bubble to other bubble
+      const dx = otherBubble.position.x - x;
+      const dy = otherBubble.position.y - y;
+      const dz = otherBubble.position.z - z;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      
+      if (r > 1e-10) { // Avoid division by zero
+        // Secondary Bjerknes force: F = -ρ * V₁ * V₂ * ∇²P / (4π * r²)
+        // Direction: along line connecting bubbles
+        const F_secondary = computeSecondaryBjerknesForce(
+          V,
+          otherBubble.volume,
+          r,
+          laplacianP,
+          rho
+        );
+        
+        // Force components
+        const F_mag = Math.abs(F_secondary);
+        fx_total += F_mag * (dx / r);
+        fy_total += F_mag * (dy / r);
+        fz_total += F_mag * (dz / r);
+      }
+    }
+  }
   
   // Velocity derivatives (dynamics)
   const dvx_dt = fx_total / m;

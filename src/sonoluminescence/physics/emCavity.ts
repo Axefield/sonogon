@@ -19,6 +19,9 @@ export interface EmCavityParams {
   // Detailed parametric pumping
   useDetailedParametricPumping?: boolean; // Use quantum parametric Hamiltonian
   parametricCoupling?: number; // Coupling strength g [1/s]
+  
+  // Thermodynamic parameter for gradient calculation
+  thermoGamma?: number; // Adiabatic index (from thermo params)
 }
 
 export interface EmDerivatives {
@@ -66,7 +69,7 @@ function computeModeFrequency(
  */
 export function computeEmDerivatives(
   state: BubbleFullState,
-  params: EmCavityParams
+  params: EmCavityParams & { thermoGamma?: number }
 ): EmDerivatives {
   const { R, Rdot } = state.hydro;
   const { Pg } = state.gas;
@@ -79,9 +82,28 @@ export function computeEmDerivatives(
   const omega_p = Calculations.plasmaFrequency(ne);
 
   // Compute gradient magnitudes for pumping
+  // More detailed calculation of parametric coupling strength
   const Rdot_magnitude = Math.abs(Rdot);
-  const Pg_gradient = Math.abs(Rdot) * Math.abs(Pg) / Math.max(R, 1e-10); // Simplified gradient estimate
-  const gradientMagnitude = Rdot_magnitude + Pg_gradient * 1e-6; // Combined gradient metric
+  
+  // Pressure gradient from radial motion
+  // dP/dR ≈ -gamma * P * (3/R) for adiabatic compression
+  const gamma = params.thermoGamma || 1.4;
+  const Pg_gradient_radial = gamma * Math.abs(Pg) / Math.max(R, 1e-10);
+  
+  // Pressure gradient from time variation
+  // dP/dt ≈ -gamma * P * (3*Rdot/R) for adiabatic
+  const Pg_gradient_temporal = gamma * Math.abs(Pg) * Math.abs(Rdot) / Math.max(R, 1e-10);
+  
+  // Combined pressure gradient (geometric mean for coupling strength)
+  const Pg_gradient = Math.sqrt(Pg_gradient_radial * Pg_gradient_temporal);
+  
+  // Acoustic pressure gradient (if available from acoustic module)
+  // This would come from acoustic field gradients
+  const acousticGradient = 0; // TODO: pass from acoustic module if available
+  
+  // Combined gradient metric for parametric pumping
+  // Parametric coupling strength scales with gradient magnitude
+  const gradientMagnitude = Rdot_magnitude + Pg_gradient * 1e-6 + acousticGradient * 1e-8;
 
   const dModes = Array.from({ length: nModes }, (_, k) => {
     if (k >= params.modeFrequencies0.length) {

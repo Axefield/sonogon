@@ -56,11 +56,15 @@ export class SonoluminescenceModel {
     const dxdt = new Float64Array(x.length);
     const idx = (dim: DimensionId) => this.mapper.layout.indexOf(dim);
 
-    // Acoustic
+    // Acoustic (pass bubble position if translation is enabled)
+    const bubblePosition = state.translation 
+      ? { x: state.translation.x, y: state.translation.y, z: state.translation.z }
+      : undefined;
     const { dPhaseDt, Pacoustic, gradient, laplacian } = computeAcousticState(
       t,
       state.acoustic,
-      this.params.acoustic
+      this.params.acoustic,
+      bubblePosition
     );
     dxdt[idx(DimensionId.AcousticPhase)] = dPhaseDt;
 
@@ -163,8 +167,12 @@ export class SonoluminescenceModel {
     dxdt[idx(DimensionId.InternalEnergy_Electronic)] =
       internalEnergyDeriv.dE_elec_dt;
 
-    // EM cavity modes
-    const emDeriv = computeEmDerivatives(state, this.params.em);
+    // EM cavity modes (pass gamma from thermo params for gradient calculation)
+    const emParamsWithGamma = {
+      ...this.params.em,
+      thermoGamma: this.params.thermo.gamma,
+    };
+    const emDeriv = computeEmDerivatives(state, emParamsWithGamma);
     if (emDeriv.dModes.length >= 1) {
       dxdt[idx(DimensionId.EmMode0_Re)] = emDeriv.dModes[0].dRe;
       dxdt[idx(DimensionId.EmMode0_Im)] = emDeriv.dModes[0].dIm;

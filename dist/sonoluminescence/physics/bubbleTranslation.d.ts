@@ -10,6 +10,17 @@ export interface BubbleTranslationParams {
         z: number;
     };
     acousticLaplacian?: number;
+    enableBuoyancy?: boolean;
+    gravity?: number;
+    enableSecondaryBjerknes?: boolean;
+    otherBubbles?: Array<{
+        position: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        volume: number;
+    }>;
 }
 export interface BubbleTranslationDerivatives {
     dx_dt: number;
