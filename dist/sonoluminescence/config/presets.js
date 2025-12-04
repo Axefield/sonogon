@@ -1,0 +1,236 @@
+"use strict";
+// config/presets.ts
+// Pre-configured parameter sets for common experimental conditions
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createWaterAirPreset = createWaterAirPreset;
+exports.createArgonBubblePreset = createArgonBubblePreset;
+exports.createXenonBubblePreset = createXenonBubblePreset;
+exports.createHighIntensityPreset = createHighIntensityPreset;
+exports.validateParams = validateParams;
+exports.getDefaultPreset = getDefaultPreset;
+const units_1 = require("../core/units");
+/**
+ * Default water properties at 20°C
+ */
+const water20C = {
+    rho: units_1.Properties.water.density,
+    mu: units_1.Properties.water.viscosity,
+    sigma: units_1.Properties.water.surfaceTension,
+    Pv: units_1.Properties.water.vaporPressure,
+    P0: 101325, // Will be overridden in presets
+    c: units_1.Properties.water.speedOfSound, // Speed of sound for Keller-Miksis
+};
+/**
+ * Typical acoustic driving parameters
+ */
+const typicalAcoustic = {
+    Pa: 1.3e5, // 1.3 atm acoustic amplitude
+    omega: 2 * Math.PI * 20e3, // 20 kHz driving frequency
+};
+/**
+ * Default EM cavity parameters
+ */
+const defaultEmCavity = {
+    modeFrequencies0: [
+        2 * Math.PI * 3e14, // ~500 nm optical mode
+        2 * Math.PI * 4e14, // ~400 nm optical mode
+        2 * Math.PI * 5e14, // ~300 nm optical mode
+    ],
+    pumpCoefficient: 1e-15, // J/(m·s) - parametric pumping strength
+    decayTime: 1e-9, // 1 ns decay time
+    couplingStrength: 1e6, // coupling between modes and boundary
+    refractiveIndexBase: 1.33, // water-like refractive index
+};
+/**
+ * Default reaction parameters (Arrhenius form)
+ */
+const defaultReactions = {
+    // Reaction 0: H2O ↔ H + OH
+    reaction0_A: 1e13, // pre-exponential [1/s]
+    reaction0_Ea: 5e5 * units_1.Constants.R_gas, // activation energy [J/mol] (~500 kJ/mol)
+    // Reaction 1: O2 ↔ 2O
+    reaction1_A: 1e14,
+    reaction1_Ea: 5e5 * units_1.Constants.R_gas, // ~500 kJ/mol
+    // Reaction 2: H + O ↔ OH
+    reaction2_A: 1e11,
+    reaction2_Ea: 1e5 * units_1.Constants.R_gas, // ~100 kJ/mol
+    // Reaction 3: OH ↔ O + H
+    reaction3_A: 1e12,
+    reaction3_Ea: 4.5e5 * units_1.Constants.R_gas, // ~450 kJ/mol
+    // Reaction 4: N2 ↔ 2N
+    reaction4_A: 1e15,
+    reaction4_Ea: 9.5e5 * units_1.Constants.R_gas, // ~950 kJ/mol (very high)
+    // Reaction 5: H + OH → H2O (three-body)
+    reaction5_A: 1e10,
+    reaction5_Ea: 0.5e5 * units_1.Constants.R_gas, // ~50 kJ/mol
+};
+/**
+ * Default plasma parameters
+ */
+const defaultPlasma = {
+    ionizationPotential_Ar: 15.76 * units_1.Constants.e, // 15.76 eV
+    ionizationPotential_Xe: 12.13 * units_1.Constants.e, // 12.13 eV
+    ionizationPotential_H: 13.6 * units_1.Constants.e, // 13.6 eV
+    ionizationPotential_O: 13.62 * units_1.Constants.e, // 13.62 eV
+    recombinationCoeff: 1e-13, // m³/s
+    electronCollisionFreq: 1e13, // 1/s
+};
+/**
+ * Preset: Water with dissolved air (typical experimental setup)
+ */
+function createWaterAirPreset() {
+    return {
+        hydro: {
+            ...water20C,
+            P0: 101325, // 1 atm ambient pressure
+        },
+        thermo: {
+            gamma: 1.4, // air-like (diatomic)
+            R0: 1e-6, // 1 micron reference radius
+            Pg0: 101325, // 1 atm reference pressure
+            T0: 293.15, // 20°C reference temperature
+            heatLossCoeff: 100, // W/(m²·K) - moderate heat loss
+        },
+        plasma: defaultPlasma,
+        em: defaultEmCavity,
+        acoustic: typicalAcoustic,
+        reactions: defaultReactions,
+    };
+}
+/**
+ * Preset: Argon bubble in water (common for sonoluminescence)
+ */
+function createArgonBubblePreset() {
+    return {
+        hydro: {
+            ...water20C,
+            P0: 101325, // 1 atm
+        },
+        thermo: {
+            gamma: units_1.Properties.argon.gamma, // 1.67 for monatomic
+            R0: 1e-6, // 1 micron
+            Pg0: 101325,
+            T0: 293.15,
+            heatLossCoeff: 50, // Lower heat loss (argon is inert)
+        },
+        plasma: {
+            ...defaultPlasma,
+            // Argon is the dominant species, so use its ionization potential primarily
+        },
+        em: defaultEmCavity,
+        acoustic: typicalAcoustic,
+        reactions: defaultReactions,
+    };
+}
+/**
+ * Preset: Xenon bubble (high light yield)
+ */
+function createXenonBubblePreset() {
+    return {
+        hydro: {
+            ...water20C,
+            P0: 101325,
+        },
+        thermo: {
+            gamma: units_1.Properties.xenon.gamma, // 1.67 for monatomic
+            R0: 1e-6,
+            Pg0: 101325,
+            T0: 293.15,
+            heatLossCoeff: 50,
+        },
+        plasma: {
+            ...defaultPlasma,
+            // Xenon has lower ionization potential, easier to ionize
+        },
+        em: {
+            ...defaultEmCavity,
+            pumpCoefficient: 2e-15, // Higher pumping for xenon
+        },
+        acoustic: typicalAcoustic,
+        reactions: defaultReactions,
+    };
+}
+/**
+ * Preset: High-intensity driving (extreme conditions)
+ */
+function createHighIntensityPreset() {
+    return {
+        hydro: {
+            ...water20C,
+            P0: 101325,
+        },
+        thermo: {
+            gamma: 1.4,
+            R0: 1e-6,
+            Pg0: 101325,
+            T0: 293.15,
+            heatLossCoeff: 200, // Higher heat loss at high intensity
+        },
+        plasma: defaultPlasma,
+        em: {
+            ...defaultEmCavity,
+            pumpCoefficient: 5e-15, // Stronger pumping
+            decayTime: 5e-10, // Faster decay
+        },
+        acoustic: {
+            Pa: 2.0e5, // Higher acoustic amplitude (2 atm)
+            omega: 2 * Math.PI * 25e3, // 25 kHz
+        },
+        reactions: defaultReactions,
+    };
+}
+/**
+ * Validate parameter set for physical reasonableness
+ */
+function validateParams(params) {
+    const errors = [];
+    // Hydro validation
+    if (params.hydro.rho <= 0) {
+        errors.push("Fluid density must be positive");
+    }
+    if (params.hydro.mu < 0) {
+        errors.push("Viscosity cannot be negative");
+    }
+    if (params.hydro.sigma < 0) {
+        errors.push("Surface tension cannot be negative");
+    }
+    // Thermo validation
+    if (params.thermo.gamma < 1.0 || params.thermo.gamma > 2.0) {
+        errors.push("Adiabatic index gamma should be between 1 and 2");
+    }
+    if (params.thermo.T0 <= 0) {
+        errors.push("Reference temperature must be positive");
+    }
+    // Acoustic validation
+    if (params.acoustic.Pa !== undefined && params.acoustic.Pa < 0) {
+        errors.push("Acoustic amplitude cannot be negative");
+    }
+    if (params.acoustic.omega !== undefined && params.acoustic.omega <= 0) {
+        errors.push("Acoustic frequency must be positive");
+    }
+    if (!params.acoustic.Pa && !params.acoustic.frequencies) {
+        errors.push("Either Pa/omega or frequencies must be specified");
+    }
+    // EM validation
+    if (params.em.decayTime <= 0) {
+        errors.push("EM decay time must be positive");
+    }
+    if (params.em.modeFrequencies0.length === 0) {
+        errors.push("At least one EM mode frequency must be specified");
+    }
+    // Plasma validation
+    if (params.plasma.recombinationCoeff < 0) {
+        errors.push("Recombination coefficient cannot be negative");
+    }
+    return {
+        valid: errors.length === 0,
+        errors,
+    };
+}
+/**
+ * Get default preset (water with air)
+ */
+function getDefaultPreset() {
+    return createWaterAirPreset();
+}
+//# sourceMappingURL=presets.js.map

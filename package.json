@@ -1,0 +1,23 @@
+{
+  "name": "sonogon",
+  "version": "1.0.0",
+  "description": "36D+ Sonoluminescence Model",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "sonoluminescence",
+    "physics",
+    "simulation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.10.0"
+  }
+}
+
