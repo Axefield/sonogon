@@ -89,6 +89,38 @@ class DefaultStateVectorMapper {
         // Hydrodynamic
         vec[idx(types_1.DimensionId.Radius)] = state.hydro.R;
         vec[idx(types_1.DimensionId.RadiusVelocity)] = state.hydro.Rdot;
+        // Shape oscillations
+        if (state.shape) {
+            vec[idx(types_1.DimensionId.ShapeMode2_Amplitude)] = state.shape.a2;
+            vec[idx(types_1.DimensionId.ShapeMode2_Velocity)] = state.shape.a2_dot;
+            vec[idx(types_1.DimensionId.ShapeMode4_Amplitude)] = state.shape.a4;
+            vec[idx(types_1.DimensionId.ShapeMode4_Velocity)] = state.shape.a4_dot;
+        }
+        else {
+            // Default to zero if not provided
+            vec[idx(types_1.DimensionId.ShapeMode2_Amplitude)] = 0;
+            vec[idx(types_1.DimensionId.ShapeMode2_Velocity)] = 0;
+            vec[idx(types_1.DimensionId.ShapeMode4_Amplitude)] = 0;
+            vec[idx(types_1.DimensionId.ShapeMode4_Velocity)] = 0;
+        }
+        // Bubble translation
+        if (state.translation) {
+            vec[idx(types_1.DimensionId.BubblePosition_X)] = state.translation.x;
+            vec[idx(types_1.DimensionId.BubblePosition_Y)] = state.translation.y;
+            vec[idx(types_1.DimensionId.BubblePosition_Z)] = state.translation.z;
+            vec[idx(types_1.DimensionId.BubbleVelocity_X)] = state.translation.vx;
+            vec[idx(types_1.DimensionId.BubbleVelocity_Y)] = state.translation.vy;
+            vec[idx(types_1.DimensionId.BubbleVelocity_Z)] = state.translation.vz;
+        }
+        else {
+            // Default to zero if not provided
+            vec[idx(types_1.DimensionId.BubblePosition_X)] = 0;
+            vec[idx(types_1.DimensionId.BubblePosition_Y)] = 0;
+            vec[idx(types_1.DimensionId.BubblePosition_Z)] = 0;
+            vec[idx(types_1.DimensionId.BubbleVelocity_X)] = 0;
+            vec[idx(types_1.DimensionId.BubbleVelocity_Y)] = 0;
+            vec[idx(types_1.DimensionId.BubbleVelocity_Z)] = 0;
+        }
         // Gas macro state
         vec[idx(types_1.DimensionId.GasPressure)] = state.gas.Pg;
         vec[idx(types_1.DimensionId.GasTemperature)] = state.gas.T;
@@ -171,12 +203,30 @@ class DefaultStateVectorMapper {
         const omega0 = computeModeFreq(omega0_base, R, omega_p);
         const omega1 = computeModeFreq(omega1_base, R, omega_p);
         const omega2 = computeModeFreq(omega2_base, R, omega_p);
+        // Extract shape oscillations
+        const shape = {
+            a2: vec[idx(types_1.DimensionId.ShapeMode2_Amplitude)],
+            a2_dot: vec[idx(types_1.DimensionId.ShapeMode2_Velocity)],
+            a4: vec[idx(types_1.DimensionId.ShapeMode4_Amplitude)],
+            a4_dot: vec[idx(types_1.DimensionId.ShapeMode4_Velocity)],
+        };
+        // Extract bubble translation
+        const translation = {
+            x: vec[idx(types_1.DimensionId.BubblePosition_X)],
+            y: vec[idx(types_1.DimensionId.BubblePosition_Y)],
+            z: vec[idx(types_1.DimensionId.BubblePosition_Z)],
+            vx: vec[idx(types_1.DimensionId.BubbleVelocity_X)],
+            vy: vec[idx(types_1.DimensionId.BubbleVelocity_Y)],
+            vz: vec[idx(types_1.DimensionId.BubbleVelocity_Z)],
+        };
         return {
             t,
             hydro: {
                 R: vec[idx(types_1.DimensionId.Radius)],
                 Rdot: vec[idx(types_1.DimensionId.RadiusVelocity)],
             },
+            shape,
+            translation,
             gas: {
                 Pg: vec[idx(types_1.DimensionId.GasPressure)],
                 T: vec[idx(types_1.DimensionId.GasTemperature)],

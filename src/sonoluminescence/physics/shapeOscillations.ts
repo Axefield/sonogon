@@ -32,6 +32,10 @@ export interface ShapeOscillationParams {
   couplingCoefficient2?: number; // Mode 2 coupling strength
   couplingCoefficient4?: number; // Mode 4 coupling strength
   nonlinearCoefficient?: number; // Nonlinear coupling strength
+  
+  // Acoustic field gradient (from acoustic module)
+  acousticGradient?: { x: number; y: number; z: number };  // ∇P_acoustic [Pa/m]
+  acousticCouplingCoeff?: number; // Acoustic coupling strength
 }
 
 export interface ShapeOscillationDerivatives {
@@ -138,15 +142,26 @@ export function computeShapeOscillationDerivatives(
   }
   
   // 3. Acoustic field coupling
-  if (params.enableAcousticCoupling && state.acoustic) {
+  if (params.enableAcousticCoupling) {
     // Shape modes can be driven by acoustic pressure gradients
     // For standing waves, pressure gradients drive shape
-    // F_n ~ ∇P_acoustic (simplified)
-    // In a full implementation, would use acoustic gradient from acoustic module
-    const acousticCoupling = 1e-6; // Small coupling
-    // Placeholder: would use actual gradient if available
-    F2 += acousticCoupling * Math.sin(state.acoustic.phase);
-    F4 += acousticCoupling * 0.5 * Math.sin(state.acoustic.phase);
+    // F_n ~ ∇P_acoustic
+    const acousticCoupling = params.acousticCouplingCoeff || 1e-6; // Small coupling
+    
+    if (params.acousticGradient) {
+      // Use actual gradient magnitude
+      const gradP_mag = Math.sqrt(
+        params.acousticGradient.x * params.acousticGradient.x +
+        params.acousticGradient.y * params.acousticGradient.y +
+        params.acousticGradient.z * params.acousticGradient.z
+      );
+      F2 += acousticCoupling * gradP_mag;
+      F4 += acousticCoupling * 0.5 * gradP_mag;
+    } else if (state.acoustic) {
+      // Fallback to phase-based coupling if gradient not available
+      F2 += acousticCoupling * Math.sin(state.acoustic.phase);
+      F4 += acousticCoupling * 0.5 * Math.sin(state.acoustic.phase);
+    }
   }
   
   // 4. Pressure coupling (from gas pressure variations)

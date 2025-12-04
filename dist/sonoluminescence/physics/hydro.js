@@ -17,16 +17,43 @@ function computeHydroDerivatives(state, params, Pacoustic, gamma // Adiabatic in
 ) {
     const { R, Rdot } = state.hydro;
     const { Pg } = state.gas;
-    const { rho, mu, sigma, Pv, P0, c = 1482, useKellerMiksis = false } = params;
+    const { rho, mu, sigma, Pv, P0, c = 1482, useKellerMiksis = false, enableShapeRadialCoupling = false, shapeCouplingCoefficient = 0.1, } = params;
     // Avoid division by zero for very small R
     const R_safe = Math.max(R, 1e-10);
+    // Shape-radial coupling: shape oscillations affect effective radius
+    // Effective radius: R_eff = R * (1 + (a₂² + a₄²) / (2*R²))
+    let R_effective = R_safe;
+    if (enableShapeRadialCoupling && state.shape) {
+        const { a2, a4 } = state.shape;
+        const shapeCorrection = (a2 * a2 + a4 * a4) / (2.0 * R_safe * R_safe);
+        R_effective = R_safe * (1.0 + shapeCorrection);
+    }
     // dR/dt = Rdot (kinematics)
-    const dRdt = Rdot;
+    // With shape coupling: radial velocity is modified by shape deformation rate
+    let dRdt = Rdot;
+    if (enableShapeRadialCoupling && state.shape) {
+        const { a2_dot, a4_dot } = state.shape;
+        // Shape deformation contributes to effective radial motion
+        const shapeContribution = shapeCouplingCoefficient * (a2_dot + a4_dot) / R_safe;
+        dRdt += shapeContribution;
+    }
     // Pressure terms
+    // Use effective radius if shape coupling is enabled
+    const R_for_pressure = enableShapeRadialCoupling ? R_effective : R_safe;
     const pressureTerm = Pg - P0 - Pacoustic - Pv;
-    const surfaceTensionTerm = 2 * sigma / R_safe;
-    const viscousTerm = 4 * mu * Rdot / R_safe;
-    const netPressure = pressureTerm - surfaceTensionTerm - viscousTerm;
+    const surfaceTensionTerm = 2 * sigma / R_for_pressure;
+    const viscousTerm = 4 * mu * Rdot / R_for_pressure;
+    // Additional pressure term from shape oscillations
+    // Shape oscillations create additional surface area and pressure
+    let shapePressureTerm = 0;
+    if (enableShapeRadialCoupling && state.shape) {
+        const { a2, a2_dot, a4, a4_dot } = state.shape;
+        // Shape oscillations create restoring forces
+        // Additional pressure ~ sigma * (a₂² + a₄²) / R³
+        const shapePressure = shapeCouplingCoefficient * sigma * (a2 * a2 + a4 * a4) / (R_safe * R_safe * R_safe);
+        shapePressureTerm = shapePressure;
+    }
+    const netPressure = pressureTerm - surfaceTensionTerm - viscousTerm - shapePressureTerm;
     if (useKellerMiksis && c > 0) {
         // Keller-Miksis equation (accounts for liquid compressibility)
         // More accurate for supersonic collapse (Rdot ~ c)

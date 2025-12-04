@@ -7,6 +7,8 @@ export interface HydroParams {
     P0: number;
     c: number;
     useKellerMiksis?: boolean;
+    enableShapeRadialCoupling?: boolean;
+    shapeCouplingCoefficient?: number;
 }
 export interface HydroDerivatives {
     dRdt: number;

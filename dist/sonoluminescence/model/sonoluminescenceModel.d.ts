@@ -5,6 +5,8 @@ import { PlasmaParams } from "../physics/plasma";
 import { EmCavityParams } from "../physics/emCavity";
 import { AcousticParams } from "../physics/acoustic";
 import { ReactionParams } from "../physics/reactions";
+import { ShapeOscillationParams } from "../physics/shapeOscillations";
+import { BubbleTranslationParams } from "../physics/bubbleTranslation";
 export interface SonoluminescenceParams {
     hydro: HydroParams;
     thermo: ThermoParams;
@@ -12,6 +14,8 @@ export interface SonoluminescenceParams {
     em: EmCavityParams;
     acoustic: AcousticParams;
     reactions: ReactionParams;
+    shape?: ShapeOscillationParams;
+    translation?: BubbleTranslationParams;
 }
 export declare class SonoluminescenceModel {
     private mapper;

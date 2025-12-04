@@ -9,6 +9,8 @@ const plasma_1 = require("../physics/plasma");
 const emCavity_1 = require("../physics/emCavity");
 const acoustic_1 = require("../physics/acoustic");
 const reactions_1 = require("../physics/reactions");
+const shapeOscillations_1 = require("../physics/shapeOscillations");
+const bubbleTranslation_1 = require("../physics/bubbleTranslation");
 class SonoluminescenceModel {
     constructor(mapper, params) {
         this.mapper = mapper;
@@ -28,9 +30,39 @@ class SonoluminescenceModel {
         const dxdt = new Float64Array(x.length);
         const idx = (dim) => this.mapper.layout.indexOf(dim);
         // Acoustic
-        const { dPhaseDt, Pacoustic } = (0, acoustic_1.computeAcousticState)(t, state.acoustic, this.params.acoustic);
+        const { dPhaseDt, Pacoustic, gradient, laplacian } = (0, acoustic_1.computeAcousticState)(t, state.acoustic, this.params.acoustic);
         dxdt[idx(types_1.DimensionId.AcousticPhase)] = dPhaseDt;
+        // Shape oscillations (if enabled)
+        if (this.params.shape) {
+            // Pass acoustic gradient to shape module if available
+            const shapeParams = {
+                ...this.params.shape,
+                acousticGradient: gradient,
+            };
+            const shapeDeriv = (0, shapeOscillations_1.computeShapeOscillationDerivatives)(state, shapeParams);
+            dxdt[idx(types_1.DimensionId.ShapeMode2_Amplitude)] = shapeDeriv.da2_dt;
+            dxdt[idx(types_1.DimensionId.ShapeMode2_Velocity)] = shapeDeriv.da2dot_dt;
+            dxdt[idx(types_1.DimensionId.ShapeMode4_Amplitude)] = shapeDeriv.da4_dt;
+            dxdt[idx(types_1.DimensionId.ShapeMode4_Velocity)] = shapeDeriv.da4dot_dt;
+        }
+        // Bubble translation (if enabled)
+        if (this.params.translation) {
+            // Update translation params with acoustic gradient if available
+            const translationParams = {
+                ...this.params.translation,
+                acousticGradient: gradient,
+                acousticLaplacian: laplacian,
+            };
+            const translationDeriv = (0, bubbleTranslation_1.computeBubbleTranslationDerivatives)(state, translationParams);
+            dxdt[idx(types_1.DimensionId.BubblePosition_X)] = translationDeriv.dx_dt;
+            dxdt[idx(types_1.DimensionId.BubblePosition_Y)] = translationDeriv.dy_dt;
+            dxdt[idx(types_1.DimensionId.BubblePosition_Z)] = translationDeriv.dz_dt;
+            dxdt[idx(types_1.DimensionId.BubbleVelocity_X)] = translationDeriv.dvx_dt;
+            dxdt[idx(types_1.DimensionId.BubbleVelocity_Y)] = translationDeriv.dvy_dt;
+            dxdt[idx(types_1.DimensionId.BubbleVelocity_Z)] = translationDeriv.dvz_dt;
+        }
         // Hydro (pass gamma from thermo params for Keller-Miksis)
+        // Note: Shape oscillations can affect effective radius (coupling)
         const gamma = this.params.thermo.gamma;
         const hydroDeriv = (0, hydro_1.computeHydroDerivatives)(state, this.params.hydro, Pacoustic, gamma);
         dxdt[idx(types_1.DimensionId.Radius)] = hydroDeriv.dRdt;

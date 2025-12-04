@@ -14,6 +14,12 @@ export interface ShapeOscillationParams {
     couplingCoefficient2?: number;
     couplingCoefficient4?: number;
     nonlinearCoefficient?: number;
+    acousticGradient?: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    acousticCouplingCoeff?: number;
 }
 export interface ShapeOscillationDerivatives {
     da2_dt: number;

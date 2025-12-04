@@ -16,6 +16,14 @@ import {
   computeReactionDerivatives,
   computeSpeciesReactionRates,
 } from "../physics/reactions";
+import {
+  ShapeOscillationParams,
+  computeShapeOscillationDerivatives,
+} from "../physics/shapeOscillations";
+import {
+  BubbleTranslationParams,
+  computeBubbleTranslationDerivatives,
+} from "../physics/bubbleTranslation";
 
 export interface SonoluminescenceParams {
   hydro: HydroParams;
@@ -24,6 +32,8 @@ export interface SonoluminescenceParams {
   em: EmCavityParams;
   acoustic: AcousticParams;
   reactions: ReactionParams;
+  shape?: ShapeOscillationParams; // Optional: shape oscillation parameters
+  translation?: BubbleTranslationParams; // Optional: translation parameters
 }
 
 export class SonoluminescenceModel {
@@ -47,14 +57,52 @@ export class SonoluminescenceModel {
     const idx = (dim: DimensionId) => this.mapper.layout.indexOf(dim);
 
     // Acoustic
-    const { dPhaseDt, Pacoustic } = computeAcousticState(
+    const { dPhaseDt, Pacoustic, gradient, laplacian } = computeAcousticState(
       t,
       state.acoustic,
       this.params.acoustic
     );
     dxdt[idx(DimensionId.AcousticPhase)] = dPhaseDt;
 
+    // Shape oscillations (if enabled)
+    if (this.params.shape) {
+      // Pass acoustic gradient to shape module if available
+      const shapeParams = {
+        ...this.params.shape,
+        acousticGradient: gradient,
+      };
+      const shapeDeriv = computeShapeOscillationDerivatives(
+        state,
+        shapeParams
+      );
+      dxdt[idx(DimensionId.ShapeMode2_Amplitude)] = shapeDeriv.da2_dt;
+      dxdt[idx(DimensionId.ShapeMode2_Velocity)] = shapeDeriv.da2dot_dt;
+      dxdt[idx(DimensionId.ShapeMode4_Amplitude)] = shapeDeriv.da4_dt;
+      dxdt[idx(DimensionId.ShapeMode4_Velocity)] = shapeDeriv.da4dot_dt;
+    }
+
+    // Bubble translation (if enabled)
+    if (this.params.translation) {
+      // Update translation params with acoustic gradient if available
+      const translationParams = {
+        ...this.params.translation,
+        acousticGradient: gradient,
+        acousticLaplacian: laplacian,
+      };
+      const translationDeriv = computeBubbleTranslationDerivatives(
+        state,
+        translationParams
+      );
+      dxdt[idx(DimensionId.BubblePosition_X)] = translationDeriv.dx_dt;
+      dxdt[idx(DimensionId.BubblePosition_Y)] = translationDeriv.dy_dt;
+      dxdt[idx(DimensionId.BubblePosition_Z)] = translationDeriv.dz_dt;
+      dxdt[idx(DimensionId.BubbleVelocity_X)] = translationDeriv.dvx_dt;
+      dxdt[idx(DimensionId.BubbleVelocity_Y)] = translationDeriv.dvy_dt;
+      dxdt[idx(DimensionId.BubbleVelocity_Z)] = translationDeriv.dvz_dt;
+    }
+
     // Hydro (pass gamma from thermo params for Keller-Miksis)
+    // Note: Shape oscillations can affect effective radius (coupling)
     const gamma = this.params.thermo.gamma;
     const hydroDeriv = computeHydroDerivatives(
       state,
