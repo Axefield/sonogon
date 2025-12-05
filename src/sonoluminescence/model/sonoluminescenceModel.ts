@@ -168,6 +168,9 @@ export class SonoluminescenceModel {
       internalEnergyDeriv.dE_elec_dt;
 
     // EM cavity modes (pass gamma from thermo params for gradient calculation)
+    // Note: For full cavity-QED features (refractive index time derivative, etc.),
+    // statePrev and dt would need to be passed, but RHS function doesn't have access.
+    // These features work in post-processing or when called with full state history.
     const emParamsWithGamma = {
       ...this.params.em,
       thermoGamma: this.params.thermo.gamma,

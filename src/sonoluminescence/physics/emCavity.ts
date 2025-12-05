@@ -22,6 +22,15 @@ export interface EmCavityParams {
   
   // Thermodynamic parameter for gradient calculation
   thermoGamma?: number; // Adiabatic index (from thermo params)
+  
+  // Cavity-QED enhancements
+  useRefractiveIndexFrequencyShift?: boolean; // Include n(r,t) in frequency calculation
+  useRefractiveIndexTimeDerivative?: boolean; // Include ∂n/∂t in mode evolution
+  useDynamicQ?: boolean; // Dynamic Q-factor (depends on R, n, etc.)
+  useRadiationBackreaction?: boolean; // Radiation backreaction on bubble dynamics
+  radiationBackreactionCoeff?: number; // Backreaction coefficient [N·s/J]
+  includeBremsstrahlungEmission?: boolean; // Add bremsstrahlung to stored energy
+  includeRecombinationEmission?: boolean; // Add recombination emission to stored energy
 }
 
 export interface EmDerivatives {
@@ -30,21 +39,36 @@ export interface EmDerivatives {
 }
 
 /**
- * Compute mode frequency as function of bubble radius
+ * Compute mode frequency as function of bubble radius and refractive index
  * 
- * For a spherical cavity, mode frequencies scale with 1/R
- * ω_k(t) = ω_k0 * (R0 / R(t))
+ * FORMAL CAVITY-QED: ω_k(R(t), n(r,t))
+ * 
+ * For a spherical cavity with refractive index n:
+ * ω_k(t) = ω_k0 * (R0 / R(t)) * (1 / n_effective)
  * 
  * Also affected by plasma frequency: ω_eff = sqrt(ω_k² - ω_p²)
+ * 
+ * The refractive index n(r,t) depends on:
+ * - Neutral gas density (density-dependent)
+ * - Plasma frequency (frequency-dependent)
+ * - Radial position (gradient effects)
  */
 function computeModeFrequency(
   omega0: number,
   R: number,
   R0: number,
-  omega_p: number
+  omega_p: number,
+  n_effective?: number, // Refractive index (if available)
+  opticalFrequency?: number // Optical frequency for plasma refractive index
 ): number {
   // Geometric scaling: frequency ~ 1/R for cavity modes
-  const omega_geometric = omega0 * (R0 / Math.max(R, 1e-10));
+  let omega_geometric = omega0 * (R0 / Math.max(R, 1e-10));
+  
+  // Refractive index effect: ω ∝ 1/n
+  // For cavity modes, the frequency scales inversely with refractive index
+  if (n_effective !== undefined && n_effective > 0) {
+    omega_geometric = omega_geometric / n_effective;
+  }
   
   // Plasma frequency effect: ω_eff = sqrt(ω_k² - ω_p²) if ω_k > ω_p
   // If ω_p > ω_k, mode is cut off
@@ -53,6 +77,61 @@ function computeModeFrequency(
   }
   
   return Math.sqrt(omega_geometric * omega_geometric - omega_p * omega_p);
+}
+
+/**
+ * Compute refractive index time derivative ∂n/∂t
+ * 
+ * The refractive index changes with:
+ * - Density changes (compression/expansion)
+ * - Plasma density changes (ionization/recombination)
+ * - Temperature changes (affects polarizability)
+ * 
+ * Computed directly from state changes to avoid circular dependency.
+ */
+function computeRefractiveIndexTimeDerivative(
+  state: BubbleFullState,
+  statePrev: BubbleFullState,
+  dt: number,
+  opticalFrequency: number
+): number {
+  // Compute refractive index directly (avoiding circular dependency)
+  const { R } = state.hydro;
+  const { T } = state.gas;
+  const { ne } = state.plasma;
+  const { numberDensity } = state.species;
+  
+  // Neutral gas refractive index: n ≈ 1 + α * ρ
+  const totalNeutralDensity = Object.values(numberDensity).reduce(
+    (sum, n) => sum + n,
+    0
+  );
+  const alpha = 1e-29; // Approximate polarizability [m³]
+  const n_neutral = 1.0 + alpha * totalNeutralDensity;
+  
+  // Plasma refractive index: n² = 1 - (ωp² / ω²)
+  const omega_p = Calculations.plasmaFrequency(ne);
+  const n_plasma_squared = 1.0 - (omega_p * omega_p) / (opticalFrequency * opticalFrequency);
+  const n_plasma = n_plasma_squared > 0 ? Math.sqrt(n_plasma_squared) : 0;
+  const n_current = n_neutral + (n_plasma - 1.0) * 0.5;
+  
+  // Previous state
+  const { R: R_prev } = statePrev.hydro;
+  const { T: T_prev } = statePrev.gas;
+  const { ne: ne_prev } = statePrev.plasma;
+  const { numberDensity: numberDensityPrev } = statePrev.species;
+  
+  const totalNeutralDensityPrev = Object.values(numberDensityPrev).reduce(
+    (sum, n) => sum + n,
+    0
+  );
+  const n_neutral_prev = 1.0 + alpha * totalNeutralDensityPrev;
+  const omega_p_prev = Calculations.plasmaFrequency(ne_prev);
+  const n_plasma_squared_prev = 1.0 - (omega_p_prev * omega_p_prev) / (opticalFrequency * opticalFrequency);
+  const n_plasma_prev = n_plasma_squared_prev > 0 ? Math.sqrt(n_plasma_squared_prev) : 0;
+  const n_prev = n_neutral_prev + (n_plasma_prev - 1.0) * 0.5;
+  
+  return (n_current - n_prev) / dt;
 }
 
 /**
@@ -67,19 +146,64 @@ function computeModeFrequency(
  * - Pump term: α * |Rdot| * |gradient_terms|
  * - Decay term: -E_em / τ
  */
+export interface EmDerivativesWithState {
+  dModes: { dRe: number; dIm: number }[];
+  dStoredEnergyDt: number;
+  radiationBackreaction?: { fx: number; fy: number; fz: number }; // Radiation backreaction force
+  dynamicQ?: number[]; // Dynamic Q-factor for each mode
+}
+
+/**
+ * Compute EM mode + stored energy derivatives (CAVITY-QED FORMALISM)
+ * 
+ * Enhanced with:
+ * - Refractive index frequency shift: ω_k(R(t), n(r,t))
+ * - Mode squeezing with ∂n/∂t: ȧk = f(ak, R, Ṙ, ∂n/∂t)
+ * - Dynamic Q-factor & cavity losses
+ * - Radiation backreaction
+ * - Bremsstrahlung + recombination emission
+ */
 export function computeEmDerivatives(
   state: BubbleFullState,
-  params: EmCavityParams & { thermoGamma?: number }
-): EmDerivatives {
+  params: EmCavityParams & { thermoGamma?: number },
+  statePrev?: BubbleFullState, // Previous state for computing time derivatives
+  dt?: number // Time step for computing time derivatives
+): EmDerivatives | EmDerivativesWithState {
   const { R, Rdot } = state.hydro;
-  const { Pg } = state.gas;
-  const { ne } = state.plasma;
+  const { Pg, T } = state.gas;
+  const { ne, Te } = state.plasma;
   const modes = state.em.modes;
   const nModes = modes.length;
   const R0 = params.modeFrequencies0.length > 0 ? 1e-6 : 1e-6; // Reference radius
 
   // Compute plasma frequency
   const omega_p = Calculations.plasmaFrequency(ne);
+  
+  // Compute refractive index (for frequency shift)
+  // FORMAL CAVITY-QED: n(r,t) depends on density, plasma, temperature
+  let n_effective: number | undefined;
+  let dn_dt: number | undefined;
+  if (params.useRefractiveIndexFrequencyShift || params.useRefractiveIndexTimeDerivative) {
+    const opticalFrequency = params.modeFrequencies0[0] || 2 * Math.PI * 3e14;
+    
+    // Compute n directly (avoiding circular dependency)
+    const { numberDensity } = state.species;
+    const totalNeutralDensity = Object.values(numberDensity).reduce(
+      (sum, n) => sum + n,
+      0
+    );
+    const alpha = 1e-29; // Approximate polarizability [m³]
+    const n_neutral = 1.0 + alpha * totalNeutralDensity;
+    
+    const n_plasma_squared = 1.0 - (omega_p * omega_p) / (opticalFrequency * opticalFrequency);
+    const n_plasma = n_plasma_squared > 0 ? Math.sqrt(n_plasma_squared) : 0;
+    n_effective = n_neutral + (n_plasma - 1.0) * 0.5;
+    
+    // Compute ∂n/∂t if previous state available
+    if (params.useRefractiveIndexTimeDerivative && statePrev && dt !== undefined) {
+      dn_dt = computeRefractiveIndexTimeDerivative(state, statePrev, dt, opticalFrequency);
+    }
+  }
 
   // Compute gradient magnitudes for pumping
   // More detailed calculation of parametric coupling strength
@@ -111,7 +235,15 @@ export function computeEmDerivatives(
     }
 
     const omega0 = params.modeFrequencies0[k];
-    const omega_k = computeModeFrequency(omega0, R, R0, omega_p);
+    const opticalFrequency = omega0; // Use mode frequency as optical frequency
+    const omega_k = computeModeFrequency(
+      omega0, 
+      R, 
+      R0, 
+      omega_p,
+      n_effective, // Include refractive index if enabled
+      opticalFrequency
+    );
     
     // If mode is cut off, decay to zero
     if (omega_k === 0) {
@@ -163,6 +295,18 @@ export function computeEmDerivatives(
       pumpRe = g_t * a_im;
       pumpIm = -g_t * a_re;
       
+      // REFRACTIVE INDEX TIME DERIVATIVE CONTRIBUTION: ∂n/∂t term
+      // Mode squeezing equation: ȧk = f(ak, R, Ṙ, ∂n/∂t)
+      // The refractive index time derivative contributes to mode evolution
+      // via the cavity frequency shift: ω_k ∝ 1/n, so dω_k/dt ∝ -(1/n²) * dn/dt
+      if (params.useRefractiveIndexTimeDerivative && dn_dt !== undefined) {
+        const n_safe = Math.max(n_effective || 1.0, 0.1);
+        const omega_n_derivative = -(omega_k / (n_safe * n_safe)) * dn_dt;
+        // This contributes to mode evolution as frequency modulation
+        pumpRe += omega_n_derivative * a_im * 0.5; // Coupling factor
+        pumpIm -= omega_n_derivative * a_re * 0.5;
+      }
+      
       // Additional squeezing term (higher order)
       // For strong coupling, add squeezing: H_squeeze = g_squeeze * (a†² + a²)
       // This enhances the negative-space behavior for very strong compression
@@ -181,16 +325,36 @@ export function computeEmDerivatives(
     }
 
     // Damping: cavity losses (quality factor Q)
+    // DYNAMIC Q-FACTOR: Q(R, n, ω) - depends on cavity geometry and refractive index
     let Q = params.Q0 || 1000; // Base quality factor
-    if (params.useFrequencyDependentQ) {
+    
+    if (params.useDynamicQ || params.useFrequencyDependentQ) {
+      // Dynamic Q depends on:
+      // 1. Frequency: Q(ω) = Q0 * (ω0/ω)^alpha
+      // 2. Radius: Q(R) ~ R (larger cavity = higher Q)
+      // 3. Refractive index: Q(n) ~ n (higher n = higher Q, more confinement)
+      
       if (params.QFrequencyDependence) {
         Q = params.QFrequencyDependence(omega_k);
       } else {
         // Default frequency dependence: Q decreases with frequency
-        // Q(ω) = Q0 * (ω0/ω)^alpha
         const omega_ref = params.modeFrequencies0[0] || 2 * Math.PI * 3e14;
         const alpha = 0.5; // Power law exponent
         Q = Q * Math.pow(omega_ref / Math.max(omega_k, omega_ref * 0.1), alpha);
+      }
+      
+      // Radius dependence: Q ~ R (larger bubble = higher Q)
+      if (params.useDynamicQ) {
+        const R_ref = 5e-6; // Reference radius [m]
+        const Q_radius_factor = R / Math.max(R_ref, 1e-10);
+        Q = Q * Q_radius_factor;
+      }
+      
+      // Refractive index dependence: Q ~ n (higher n = better confinement)
+      if (params.useDynamicQ && n_effective !== undefined) {
+        const n_ref = 1.0; // Reference refractive index (vacuum)
+        const Q_n_factor = n_effective / n_ref;
+        Q = Q * Q_n_factor;
       }
     }
     const damping = omega_k / (2.0 * Q);
@@ -221,10 +385,15 @@ export function computeEmDerivatives(
   });
 
   // Stored energy evolution
-  // dE_em/dt = pump_term - decay_term
+  // dE_em/dt = pump_term - decay_term + bremsstrahlung + recombination
   // 
-  // Pump term: α * |Rdot| * |gradient_terms|
+  // PUMP TERM: α * |Rdot| * |gradient_terms|
   // This represents parametric amplification from boundary motion.
+  // STORED-ENERGY PUMP FROM GRADIENTS:
+  // The pump term explicitly uses gradients:
+  // - Radial gradient: |Rdot| (boundary motion)
+  // - Pressure gradient: |dPg/dt| (compression work)
+  // - Acoustic gradient: |∇P_acoustic| (if available)
   // During extreme compression (large |Rdot|, large |dPg/dt|), the boundary
   // motion pumps energy into EM modes, creating a "negative-space" squeezed state.
   // The negative-space refers to the quantum squeezed vacuum state in the
@@ -232,13 +401,98 @@ export function computeEmDerivatives(
   // is reduced below the vacuum level at the expense of increased uncertainty
   // in the conjugate quadrature.
   //
-  // Decay term: -E_em / τ
+  // DECAY TERM: -E_em / τ
   // The stored energy decays over a short timescale (τ ~ 1 ns), converting
   // to photons (light emission). This decay is what produces the sonoluminescence
   // flash: E_em rises during collapse, then rapidly decays as photons are emitted.
-  const pumpTerm = params.pumpCoefficient * gradientMagnitude;
+  //
+  // BREMSSTRAHLUNG EMISSION: Energy from electron-ion collisions
+  // Recombination emission: Energy from electron-ion recombination
+  let pumpTerm = params.pumpCoefficient * gradientMagnitude;
   const decayTerm = state.em.storedEnergy / Math.max(params.decayTime, 1e-12);
-  const dStoredEnergyDt = pumpTerm - decayTerm;
-
+  
+  // BREMSSTRAHLUNG + RECOMBINATION EMISSION ADDITIONS
+  let bremsstrahlungEmission = 0;
+  let recombinationEmission = 0;
+  
+  if (params.includeBremsstrahlungEmission) {
+    // Bremsstrahlung power density: P ~ ne² * sqrt(Te)
+    const volume = (4.0 / 3.0) * Math.PI * R * R * R;
+    const bremsstrahlungPowerDensity = Calculations.bremsstrahlungPowerDensity(ne, Te);
+    const bremsstrahlungPower = bremsstrahlungPowerDensity * volume;
+    // Convert power to energy rate (if dt available, otherwise use instantaneous)
+    const dt_safe = dt || 1e-12;
+    bremsstrahlungEmission = bremsstrahlungPower * dt_safe;
+  }
+  
+  if (params.includeRecombinationEmission) {
+    // Recombination emission: Energy released when electrons recombine with ions
+    // Estimate: P_recomb ~ ne * n_ions * α_recomb * E_ionization
+    // where α_recomb is recombination coefficient, E_ionization is ionization energy
+    const n_ions = ne; // Assume n_ions ≈ ne (single ionization)
+    const alpha_recomb = 2.6e-19; // Recombination coefficient [m³/s] (approximate)
+    const E_ionization = 15.76 * Constants.e; // Argon ionization energy [J]
+    const volume = (4.0 / 3.0) * Math.PI * R * R * R;
+    const recombinationPower = ne * n_ions * alpha_recomb * E_ionization * volume;
+    const dt_safe = dt || 1e-12;
+    recombinationEmission = recombinationPower * dt_safe;
+  }
+  
+  const dStoredEnergyDt = pumpTerm - decayTerm + bremsstrahlungEmission + recombinationEmission;
+  
+  // RADIATION BACKREACTION TERM
+  // The EM field exerts a force back on the bubble boundary
+  // This is the radiation pressure: F = -∇E_em / R
+  let radiationBackreaction: { fx: number; fy: number; fz: number } | undefined;
+  if (params.useRadiationBackreaction) {
+    const backreactionCoeff = params.radiationBackreactionCoeff || 1e-15; // [N·s/J]
+    const E_em = state.em.storedEnergy;
+    const R_safe = Math.max(R, 1e-10);
+    
+    // Radiation pressure: F = -E_em / R (radial, inward)
+    // Convert to force components (radial direction)
+    const F_magnitude = (E_em / R_safe) * backreactionCoeff;
+    
+    // For spherical symmetry, force is radial
+    // In 3D, this would be along the radial direction from bubble center
+    // Simplified: assume force is along z-axis (or can be distributed)
+    radiationBackreaction = {
+      fx: 0, // Could be computed from bubble position if translation enabled
+      fy: 0,
+      fz: -F_magnitude, // Radial inward (negative z for upward bubble)
+    };
+  }
+  
+  // Return with optional dynamic Q and backreaction
+  if (params.useDynamicQ || params.useRadiationBackreaction) {
+    const dynamicQ = params.useDynamicQ 
+      ? dModes.map((_, k) => {
+          const omega0 = params.modeFrequencies0[k];
+          const omega_k = computeModeFrequency(omega0, R, R0, omega_p, n_effective, omega0);
+          let Q = params.Q0 || 1000;
+          if (params.useFrequencyDependentQ) {
+            const omega_ref = params.modeFrequencies0[0] || 2 * Math.PI * 3e14;
+            const alpha = 0.5;
+            Q = Q * Math.pow(omega_ref / Math.max(omega_k, omega_ref * 0.1), alpha);
+          }
+          if (params.useDynamicQ) {
+            const R_ref = 5e-6;
+            Q = Q * (R / Math.max(R_ref, 1e-10));
+            if (n_effective !== undefined) {
+              Q = Q * (n_effective / 1.0);
+            }
+          }
+          return Q;
+        })
+      : undefined;
+    
+    return {
+      dModes,
+      dStoredEnergyDt,
+      radiationBackreaction,
+      dynamicQ,
+    };
+  }
+  
   return { dModes, dStoredEnergyDt };
 }
