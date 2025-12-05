@@ -128,7 +128,14 @@ export function testAdiabaticScaling(): TestResult {
     const T_error = Math.abs(T_ratio - T_expected_ratio) / T_expected_ratio;
     const P_error = Math.abs(P_ratio - P_expected_ratio) / P_expected_ratio;
     
-    const tolerance = 0.15; // 15% tolerance for quasi-static approximation
+    // EXACT FORMULAS:
+    // For adiabatic process: PV^γ = constant
+    // T ∝ V^(1-γ) = (R₀/R)^(3(γ-1))  [since V ∝ R³]
+    // P ∝ V^(-γ) = (R₀/R)^(3γ)
+    // 
+    // EXPECTED TOLERANCE: 15% for quasi-static approximation
+    // (Numerical errors from integration, heat loss, non-ideal effects)
+    const tolerance = 0.15; // 15% tolerance
     const passed = T_error < tolerance && P_error < tolerance;
     
     return {
@@ -187,7 +194,16 @@ export function testMinnaertFrequency(): TestResult {
     const P0 = params.hydro.P0; // Ambient pressure [Pa]
     const rho = params.hydro.rho; // Liquid density [kg/m³]
     
-    // Minnaert frequency: ω₀ = (1/R₀) * sqrt(3*γ*P₀/ρ)
+    // EXACT FORMULA: Minnaert frequency
+    // ω₀ = (1/R₀) * sqrt(3*γ*P₀/ρ)
+    // This is the natural oscillation frequency for small-amplitude linear oscillations
+    // around equilibrium radius R₀.
+    // 
+    // Derivation: Linearize Rayleigh-Plesset around R₀, Rdot=0
+    // For small oscillations: R(t) = R₀ + δR(t), where |δR| << R₀
+    // The restoring force is: F = -3*γ*P₀*δR/R₀
+    // Natural frequency: ω₀² = 3*γ*P₀/(ρ*R₀²)
+    // Therefore: ω₀ = (1/R₀) * sqrt(3*γ*P₀/ρ)
     const omega_minnaert = (1.0 / R0) * Math.sqrt((3.0 * gamma * P0) / rho);
     const f_minnaert = omega_minnaert / (2.0 * Math.PI); // [Hz]
     
@@ -305,7 +321,9 @@ export function testMinnaertFrequency(): TestResult {
     
     // Compare measured frequency to Minnaert frequency
     const frequencyError = Math.abs(f_measured - f_minnaert) / f_minnaert;
-    const tolerance = 0.2; // 20% tolerance (nonlinear effects, damping)
+    // EXPECTED TOLERANCE: 20% for small-amplitude linear regime
+    // (Nonlinear effects, damping, acoustic coupling, numerical errors)
+    const tolerance = 0.2; // 20% tolerance
     const passed = frequencyError < tolerance;
     
     return {
@@ -436,6 +454,12 @@ export function testEnergyBudgetClosure(): TestResult {
       totalEMEnergy += Math.abs(budget.emStoredEnergy);
     }
     
+    // EXACT FORMULA: Energy conservation
+    // Acoustic work in = Compression work + Heat loss + Light emission + 
+    //                    Viscous dissipation + Chemical energy + EM stored energy
+    // 
+    // W_acoustic = W_compression + Q_loss + P_light*dt + W_viscous + ΔE_chem + E_em
+    //
     // Energy balance: Acoustic work in should equal energy out
     const energyOut =
       totalCompressionWork +
@@ -453,11 +477,11 @@ export function testEnergyBudgetClosure(): TestResult {
     const energyGain = energyOut - totalAcousticWork;
     const relativeGain = energyGain / Math.max(totalAcousticWork, 1e-20);
     
-    // Test passes if:
-    // 1. Energy balance is within 30% (reasonable for approximations)
-    // 2. No significant artificial energy gain (< 10%)
-    const balanceTolerance = 0.3;
-    const gainTolerance = 0.1;
+    // EXPECTED TOLERANCES:
+    // 1. Energy balance within 30% (reasonable for approximations in heat transfer, etc.)
+    // 2. No significant artificial energy gain (< 10%) - ensures no numerical instabilities
+    const balanceTolerance = 0.3; // 30% tolerance
+    const gainTolerance = 0.1; // 10% maximum artificial gain
     const passed =
       relativeError < balanceTolerance && relativeGain < gainTolerance;
     
@@ -509,8 +533,21 @@ export function testPlasmaEquilibrium(): TestResult {
     const n_neutral_test = 1e26; // High density [m⁻³]
     const ionizationPotential_Ar = 15.76 * Constants.e; // Argon ionization potential [J]
     
-    // Compute Saha equilibrium electron density
-    const g_ratio = 1.0;
+    // EXACT FORMULA: Saha equation
+    // n_e * n_i / n_0 = (2*g_i/g_0) * (2π*m_e*k_B*T/h²)^(3/2) * exp(-I/(k_B*T))
+    //
+    // For single ionization (n_i ≈ n_e):
+    // n_e² / n_0 = (2*g_i/g_0) * (2π*m_e*k_B*T/h²)^(3/2) * exp(-I/(k_B*T))
+    // n_e = sqrt(n_0 * (2*g_i/g_0) * (2π*m_e*k_B*T/h²)^(3/2) * exp(-I/(k_B*T)))
+    //
+    // Where:
+    // - n_e: electron density [m⁻³]
+    // - n_i: ion density [m⁻³] (≈ n_e for single ionization)
+    // - n_0: neutral density [m⁻³]
+    // - g_i/g_0: statistical weight ratio (≈ 1 for ground states)
+    // - I: ionization potential [J]
+    // - T: temperature [K]
+    const g_ratio = 1.0; // Statistical weight ratio (simplified)
     const prefactor = Math.pow(
       (2.0 * Math.PI * Constants.m_e * Constants.k_B * T_test) / (Constants.h * Constants.h),
       1.5
@@ -590,6 +627,7 @@ export function testPlasmaEquilibrium(): TestResult {
     const dne_dt_eq = plasmaDeriv_eq.dn_edt;
     
     // At equilibrium, dne/dt should be close to zero
+    // EXPECTED TOLERANCE: dne/dt < 10% of equilibrium value
     const equilibriumTolerance = 0.1; // 10% of equilibrium value
     const atEquilibrium = Math.abs(dne_dt_eq) < n_e_saha * equilibriumTolerance;
     
@@ -599,8 +637,11 @@ export function testPlasmaEquilibrium(): TestResult {
       ionizationFraction_plasma - ionizationFraction_saha
     ) / ionizationFraction_saha;
     
+    // EXPECTED TOLERANCE: 50% for ionization fraction
+    // (Plasma module uses rate equations, not exact Saha equilibrium)
+    const ionizationTolerance = 0.5; // 50% tolerance
     const passed =
-      directionCorrect && ionizationError < 0.5; // 50% tolerance for ionization fraction
+      directionCorrect && ionizationError < ionizationTolerance;
     
     return {
       name: "Plasma Equilibrium Spot-Check",

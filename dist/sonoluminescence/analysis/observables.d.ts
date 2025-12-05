@@ -33,10 +33,23 @@ nBins?: number): SpectralDistribution;
 /**
  * Estimate total emission power from the bubble
  *
- * Combines:
- * - Blackbody radiation from gas temperature
- * - Bremsstrahlung from plasma (ne, Te)
- * - EM stored energy decay (photons from cavity modes)
+ * EXPLICITLY COMBINES THREE COMPONENTS:
+ *
+ * 1. BLACKBODY-ISH T TERM:
+ *    P_bb = σ * T⁴ * A
+ *    Where σ is Stefan-Boltzmann constant, T is gas temperature, A is bubble surface area.
+ *    This represents thermal radiation from the hot gas.
+ *
+ * 2. BREMSSTRAHLUNG FROM ne, Te:
+ *    P_brems ~ ne² * sqrt(Te) * V
+ *    Where ne is electron density, Te is electron temperature, V is bubble volume.
+ *    This represents free-free radiation from electron-ion collisions in the plasma.
+ *
+ * 3. EM DECAY FROM E_em:
+ *    P_em = E_em / τ
+ *    Where E_em is stored EM energy in the negative-space squeezed state, τ is decay time (~1 ns).
+ *    This represents photons emitted from the decay of the squeezed vacuum state created
+ *    by parametric amplification during collapse. This is the "light from negative cavity state."
  *
  * Optionally computes spectral distribution if computeSpectrum is true
  */

@@ -370,17 +370,26 @@ export function computeStabilityMetrics(
  * Compute mode squeezing metrics
  * 
  * Analyzes EM mode amplitudes to detect parametric amplification
- * and mode squeezing effects.
+ * and mode squeezing effects. Reports pumped energy into modes vs released energy.
+ * 
+ * This quantifies the negative-space behavior: energy pumped into squeezed states
+ * during compression vs energy released as photons during decay.
  */
 export function computeModeSqueezingMetrics(
-  state: BubbleFullState
+  state: BubbleFullState,
+  statePrev?: BubbleFullState,
+  dt?: number
 ): {
   modeAmplitudes: number[];
   totalModeEnergy: number;
   squeezingDetected: boolean;
   pumpEfficiency: number;
+  pumpedEnergy: number; // Energy pumped into modes (from parametric amplification)
+  releasedEnergy: number; // Energy released from modes (photon emission)
+  netEnergyChange: number; // Net change: pumped - released
 } {
   const { modes, storedEnergy } = state.em;
+  const { R, Rdot } = state.hydro;
 
   const modeAmplitudes = modes.map(
     (m) => Math.sqrt(m.re * m.re + m.im * m.im)
@@ -398,11 +407,42 @@ export function computeModeSqueezingMetrics(
   // Pump efficiency: ratio of stored energy to input (simplified)
   const pumpEfficiency = storedEnergy > 0 ? totalModeEnergy / storedEnergy : 0;
 
+  // PUMPED ENERGY: Energy pumped into modes via parametric amplification
+  // During compression (Rdot < 0), parametric Hamiltonian pumps energy into modes
+  // Estimate: pumped energy ≈ coupling_strength * |Rdot| * |gradient| * dt
+  let pumpedEnergy = 0;
+  if (statePrev && dt !== undefined) {
+    const dE_em = storedEnergy - statePrev.em.storedEnergy;
+    // If E_em increased, that's pumped energy (positive contribution)
+    // If E_em decreased, that's released energy (negative contribution)
+    if (dE_em > 0) {
+      pumpedEnergy = dE_em;
+    }
+  } else {
+    // Estimate from current state: pumped energy ~ coupling * |Rdot| * storedEnergy
+    // This is a rough estimate when previous state not available
+    const couplingEstimate = Math.abs(Rdot) / Math.max(R, 1e-10);
+    pumpedEnergy = couplingEstimate * storedEnergy * 1e-9; // Rough estimate
+  }
+
+  // RELEASED ENERGY: Energy released from modes as photons
+  // This is the decay term: released = E_em / τ * dt
+  const decayTime = 1e-9; // 1 ns
+  const releasedEnergy = dt !== undefined 
+    ? (storedEnergy / decayTime) * dt
+    : storedEnergy / decayTime * 1e-9; // Default dt estimate
+
+  // NET ENERGY CHANGE: pumped - released
+  const netEnergyChange = pumpedEnergy - releasedEnergy;
+
   return {
     modeAmplitudes,
     totalModeEnergy,
     squeezingDetected,
     pumpEfficiency,
+    pumpedEnergy,
+    releasedEnergy,
+    netEnergyChange,
   };
 }
 

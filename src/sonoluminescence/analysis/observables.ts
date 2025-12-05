@@ -156,10 +156,23 @@ export function computeSpectralDistribution(
 /**
  * Estimate total emission power from the bubble
  * 
- * Combines:
- * - Blackbody radiation from gas temperature
- * - Bremsstrahlung from plasma (ne, Te)
- * - EM stored energy decay (photons from cavity modes)
+ * EXPLICITLY COMBINES THREE COMPONENTS:
+ * 
+ * 1. BLACKBODY-ISH T TERM:
+ *    P_bb = σ * T⁴ * A
+ *    Where σ is Stefan-Boltzmann constant, T is gas temperature, A is bubble surface area.
+ *    This represents thermal radiation from the hot gas.
+ * 
+ * 2. BREMSSTRAHLUNG FROM ne, Te:
+ *    P_brems ~ ne² * sqrt(Te) * V
+ *    Where ne is electron density, Te is electron temperature, V is bubble volume.
+ *    This represents free-free radiation from electron-ion collisions in the plasma.
+ * 
+ * 3. EM DECAY FROM E_em:
+ *    P_em = E_em / τ
+ *    Where E_em is stored EM energy in the negative-space squeezed state, τ is decay time (~1 ns).
+ *    This represents photons emitted from the decay of the squeezed vacuum state created
+ *    by parametric amplification during collapse. This is the "light from negative cavity state."
  * 
  * Optionally computes spectral distribution if computeSpectrum is true
  */
@@ -173,12 +186,13 @@ export function estimateEmission(
   // Bubble surface area
   const surfaceArea = 4.0 * Math.PI * R * R;
 
-  // Blackbody power: P = σ * T⁴ * A
-  // (Simplified: treating bubble as blackbody emitter)
+  // 1. BLACKBODY-ISH T TERM: P = σ * T⁴ * A
+  // Thermal radiation from hot gas (blackbody approximation)
   const blackbodyPowerDensity = Calculations.blackbodyPowerDensity(gas.T);
   const blackbodyPower = blackbodyPowerDensity * surfaceArea;
 
-  // Bremsstrahlung power: P ~ ne² * sqrt(Te) * volume
+  // 2. BREMSSTRAHLUNG FROM ne, Te: P ~ ne² * sqrt(Te) * V
+  // Free-free radiation from electron-ion collisions in plasma
   const volume = (4.0 / 3.0) * Math.PI * R * R * R;
   const bremsstrahlungPowerDensity = Calculations.bremsstrahlungPowerDensity(
     plasma.ne,
@@ -186,13 +200,15 @@ export function estimateEmission(
   );
   const bremsstrahlungPower = bremsstrahlungPowerDensity * volume;
 
-  // EM stored energy decay: P = dE_em/dt (from decay term)
-  // Estimate: P ≈ E_em / τ, where τ is decay time
-  // Using a typical decay time of 1 ns
-  const decayTime = 1e-9; // 1 ns
+  // 3. EM DECAY FROM E_em: P = E_em / τ
+  // Photons from decay of negative-space squeezed state
+  // The stored energy E_em was pumped into the cavity during extreme compression
+  // via parametric amplification, creating a squeezed vacuum state. This energy
+  // decays over timescale τ (~1 ns) as photons are emitted.
+  const decayTime = 1e-9; // 1 ns (typical decay time for EM cavity)
   const emDecayPower = em.storedEnergy / decayTime;
 
-  // Total power
+  // TOTAL POWER: Sum of all three components
   const totalPower = blackbodyPower + bremsstrahlungPower + emDecayPower;
 
   // Compute spectrum if requested

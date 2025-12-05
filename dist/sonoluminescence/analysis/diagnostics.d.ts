@@ -76,12 +76,18 @@ export declare function computeStabilityMetrics(states: BubbleFullState[], times
  * Compute mode squeezing metrics
  *
  * Analyzes EM mode amplitudes to detect parametric amplification
- * and mode squeezing effects.
+ * and mode squeezing effects. Reports pumped energy into modes vs released energy.
+ *
+ * This quantifies the negative-space behavior: energy pumped into squeezed states
+ * during compression vs energy released as photons during decay.
  */
-export declare function computeModeSqueezingMetrics(state: BubbleFullState): {
+export declare function computeModeSqueezingMetrics(state: BubbleFullState, statePrev?: BubbleFullState, dt?: number): {
     modeAmplitudes: number[];
     totalModeEnergy: number;
     squeezingDetected: boolean;
     pumpEfficiency: number;
+    pumpedEnergy: number;
+    releasedEnergy: number;
+    netEnergyChange: number;
 };
 //# sourceMappingURL=diagnostics.d.ts.map
