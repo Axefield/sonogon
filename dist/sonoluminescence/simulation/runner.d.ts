@@ -18,11 +18,25 @@ export interface SimulationConfig {
         computeStability?: boolean;
         computeSpectrum?: boolean;
     };
+    logTimeSeries?: boolean;
     progressCallback?: (progress: number, t: number) => void;
+}
+export interface TimeSeriesLog {
+    t: number;
+    R: number;
+    Pg: number;
+    T: number;
+    ne: number;
+    Te: number;
+    E_em: number;
+    totalPower: number;
+    Rdot: number;
+    dPg_dt?: number;
 }
 export interface SimulationResult {
     timeSeries: IntegrationResult;
     states: BubbleFullState[];
+    timeSeriesLog?: TimeSeriesLog[];
     analysis?: {
         emissions?: EmissionSnapshot[];
         gradients?: GradientMetrics[];

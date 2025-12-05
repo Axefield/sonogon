@@ -40,6 +40,32 @@ function runSimulation(config) {
         timeSeries,
         states,
     };
+    // Explicit time series logging (R, Pg, T, ne, Te, E_em, totalPower)
+    if (config.logTimeSeries) {
+        result.timeSeriesLog = states.map((state, i) => {
+            const emission = (0, observables_1.estimateEmission)(state, false);
+            const t = timeSeries.t[i];
+            // Compute dPg/dt if we have previous state
+            let dPg_dt;
+            if (i > 0) {
+                const dt = timeSeries.t[i] - timeSeries.t[i - 1];
+                const prevState = states[i - 1];
+                dPg_dt = Math.abs((state.gas.Pg - prevState.gas.Pg) / dt);
+            }
+            return {
+                t,
+                R: state.hydro.R,
+                Pg: state.gas.Pg,
+                T: state.gas.T,
+                ne: state.plasma.ne,
+                Te: state.plasma.Te,
+                E_em: state.em.storedEnergy,
+                totalPower: emission.totalPower,
+                Rdot: state.hydro.Rdot,
+                dPg_dt,
+            };
+        });
+    }
     if (analysis.computeEmission || analysis.computeSpectrum) {
         result.analysis = result.analysis || {};
         result.analysis.emissions = states.map((state) => (0, observables_1.estimateEmission)(state, analysis.computeSpectrum || false));

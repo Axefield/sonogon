@@ -38,4 +38,5 @@ export declare function runAllTests(): {
     failed: number;
     results: TestResult[];
 };
+export { testAdiabaticScaling, testMinnaertFrequency, testEnergyBudgetClosure, testPlasmaEquilibrium, runAllPhysicsValidationTests, } from "./physicsValidation";
 //# sourceMappingURL=tests.d.ts.map

@@ -2,6 +2,7 @@
 // validation/tests.ts
 // Validation tests against known analytical and experimental results
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.runAllPhysicsValidationTests = exports.testPlasmaEquilibrium = exports.testEnergyBudgetClosure = exports.testMinnaertFrequency = exports.testAdiabaticScaling = void 0;
 exports.testAdiabaticCompression = testAdiabaticCompression;
 exports.testSahaEquilibrium = testSahaEquilibrium;
 exports.testEnergyConservation = testEnergyConservation;
@@ -286,4 +287,11 @@ function runAllTests() {
         results,
     };
 }
+// Re-export physics validation tests
+var physicsValidation_1 = require("./physicsValidation");
+Object.defineProperty(exports, "testAdiabaticScaling", { enumerable: true, get: function () { return physicsValidation_1.testAdiabaticScaling; } });
+Object.defineProperty(exports, "testMinnaertFrequency", { enumerable: true, get: function () { return physicsValidation_1.testMinnaertFrequency; } });
+Object.defineProperty(exports, "testEnergyBudgetClosure", { enumerable: true, get: function () { return physicsValidation_1.testEnergyBudgetClosure; } });
+Object.defineProperty(exports, "testPlasmaEquilibrium", { enumerable: true, get: function () { return physicsValidation_1.testPlasmaEquilibrium; } });
+Object.defineProperty(exports, "runAllPhysicsValidationTests", { enumerable: true, get: function () { return physicsValidation_1.runAllPhysicsValidationTests; } });
 //# sourceMappingURL=tests.js.map

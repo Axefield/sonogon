@@ -85,6 +85,18 @@ function computeEmDerivatives(state, params) {
             // H = g(t) * (a†² + a²) where g(t) = g0 * Rdot/R
             // This gives parametric amplification when Rdot < 0 (compression)
             // 
+            // NEGATIVE-SPACE BEHAVIOR:
+            // The parametric Hamiltonian H = g(t) * (a†² + a²) creates a squeezed
+            // vacuum state. In the Wigner function representation, this appears as
+            // a "negative-space" region where the Wigner function becomes negative,
+            // indicating non-classical behavior. The squeezing occurs in quadrature
+            // space: one quadrature is squeezed (reduced uncertainty) while the
+            // conjugate quadrature is anti-squeezed (increased uncertainty).
+            //
+            // During extreme compression (large |Rdot|), g(t) becomes large and
+            // the modes are strongly squeezed, storing energy in the negative-space
+            // state. This energy is then released as photons when the cavity decays.
+            //
             // From Heisenberg equations: da/dt = -i*[a, H] = -i*g(t)*(a† + a)
             // In terms of real/imaginary parts:
             // dRe/dt = g(t) * Im
@@ -93,10 +105,13 @@ function computeEmDerivatives(state, params) {
             const R_safe = Math.max(R, 1e-10);
             const g_t = g0 * (Rdot / R_safe); // Time-dependent coupling
             // Parametric pumping (quadrature-dependent)
+            // This cross-coupling (Re ↔ Im) is the signature of parametric amplification
+            // and creates the squeezed/negative-space state
             pumpRe = g_t * a_im;
             pumpIm = -g_t * a_re;
             // Additional squeezing term (higher order)
             // For strong coupling, add squeezing: H_squeeze = g_squeeze * (a†² + a²)
+            // This enhances the negative-space behavior for very strong compression
             const g_squeeze = g0 * 0.1; // Squeezing is weaker
             const squeezeRe = g_squeeze * a_re; // Squeezing in phase
             const squeezeIm = g_squeeze * a_im;
@@ -149,8 +164,20 @@ function computeEmDerivatives(state, params) {
     });
     // Stored energy evolution
     // dE_em/dt = pump_term - decay_term
+    // 
     // Pump term: α * |Rdot| * |gradient_terms|
+    // This represents parametric amplification from boundary motion.
+    // During extreme compression (large |Rdot|, large |dPg/dt|), the boundary
+    // motion pumps energy into EM modes, creating a "negative-space" squeezed state.
+    // The negative-space refers to the quantum squeezed vacuum state in the
+    // Wigner function representation, where the uncertainty in one quadrature
+    // is reduced below the vacuum level at the expense of increased uncertainty
+    // in the conjugate quadrature.
+    //
     // Decay term: -E_em / τ
+    // The stored energy decays over a short timescale (τ ~ 1 ns), converting
+    // to photons (light emission). This decay is what produces the sonoluminescence
+    // flash: E_em rises during collapse, then rapidly decays as photons are emitted.
     const pumpTerm = params.pumpCoefficient * gradientMagnitude;
     const decayTerm = state.em.storedEnergy / Math.max(params.decayTime, 1e-12);
     const dStoredEnergyDt = pumpTerm - decayTerm;

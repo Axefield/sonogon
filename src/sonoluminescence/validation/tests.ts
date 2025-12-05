@@ -335,3 +335,12 @@ export function runAllTests(): {
   };
 }
 
+// Re-export physics validation tests
+export {
+  testAdiabaticScaling,
+  testMinnaertFrequency,
+  testEnergyBudgetClosure,
+  testPlasmaEquilibrium,
+  runAllPhysicsValidationTests,
+} from "./physicsValidation";
+

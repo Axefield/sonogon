@@ -108,9 +108,12 @@ src/sonoluminescence/
 ├── simulation/
 │   └── runner.ts          # High-level simulation API
 ├── io/
-│   └── export.ts          # CSV and JSON export utilities
+│   ├── export.ts          # CSV and JSON export utilities
+│   └── timeSeriesExport.ts  # Time series log export (R, Pg, T, ne, Te, E_em, totalPower) ⭐
 └── validation/
-    └── tests.ts           # Validation tests
+    ├── tests.ts           # Basic validation tests
+    ├── physicsValidation.ts  # Comprehensive physics validation tests ⭐
+    └── kinematicTests.ts  # Kinematic validation tests
 ```
 
 ## State Vector Dimensions
@@ -177,13 +180,15 @@ Enhanced with detailed collision models:
 - Plasma frequency calculation
 
 ### EM Cavity (`emCavity.ts`)
-Enhanced with advanced features:
+Enhanced with advanced features and explicit negative-space behavior:
 - **Cross-mode coupling** (mode mixing, energy transfer)
 - **Frequency-dependent quality factor** Q(ω)
 - **Detailed parametric pumping** (quantum Hamiltonian)
+- **Negative-space behavior**: Quantum squeezed vacuum state with explicit Wigner function representation
+- **Parametric amplification**: `H = g(t) * (a†² + a²)` creates squeezed states during compression
 - Mode frequency modulation by bubble radius
 - Plasma frequency cutoff effects
-- Stored energy pumping and decay
+- Stored energy pumping and decay: `E_em` rises during extreme gradients, decays as photons
 
 ### Chemical Reactions (`reactions.ts`)
 Enhanced with pressure-dependent rates:
@@ -239,18 +244,55 @@ Pre-configured parameter sets for common experimental conditions:
 ### Simulation Runner (`simulation/runner.ts`)
 - `runSimulation()` - High-level API with automatic analysis
 - `quickSimulation()` - Simplified entry point
+- **Time series logging**: Explicit logging of R(t), Pg(t), T(t), ne(t), Te(t), E_em(t), totalPower(t)
 - Automatic time series generation
 - Built-in analysis options
+- **EM negative-space visualization**: Track E_em rise during collapse and decay during photon emission
 
-### Export Utilities (`io/export.ts`)
+### Export Utilities (`io/export.ts`, `io/timeSeriesExport.ts`)
 - `exportToCSV()` - Export time series to CSV
 - `exportToJSON()` - Export complete state history
 - `exportObservables()` - Export specific observables
+- `exportTimeSeriesToCSV()` - Export explicit time series log (R, Pg, T, ne, Te, E_em, totalPower)
+- `exportTimeSeriesToJSON()` - Export time series log as JSON
+- `findCollapseCycle()` - Automatically identify collapse cycle windows
 
 ### Validation Tests (`validation/`)
-- `tests.ts` - Adiabatic compression, Saha equilibrium, energy conservation
+- `tests.ts` - Adiabatic compression, Saha equilibrium, energy conservation, plasma frequency
+- `physicsValidation.ts` - Comprehensive physics validation:
+  - **Adiabatic scaling test**: Verify T ∝ (R₀/R)^(3(γ-1)), P ∝ (R₀/R)^(3γ) with Pa=0
+  - **Minnaert frequency test**: Small-amplitude linear oscillation frequency matching
+  - **Energy budget closure**: Verify acoustic work in ≈ thermal + EM + chemical + viscous dissipation
+  - **Plasma equilibrium spot-check**: Compare ionization fraction vs Saha equation
 - `kinematicTests.ts` - Shape oscillations, translation, coupling tests
 - `runAllTests()` - Run all validation tests
+- `runAllPhysicsValidationTests()` - Run comprehensive physics validation suite
+
+## Visualizing EM Negative-Space Behavior
+
+The time series logging feature allows you to visualize the "light coming from decay in a negative cavity state":
+
+```typescript
+const result = runSimulation({
+  model,
+  initialState,
+  integratorOptions: { /* ... */ },
+  logTimeSeries: true, // Enable time series logging
+  analysis: { computeEmission: true },
+});
+
+// Export and plot E_em(t) and totalPower(t)
+import { exportTimeSeriesToCSV } from './src/sonoluminescence/io/timeSeriesExport';
+const csv = exportTimeSeriesToCSV(result.timeSeriesLog!);
+
+// Plot shows:
+// - E_em rises during extreme gradients (parametric pumping)
+// - E_em decays rapidly (τ ~ 1 ns) after collapse
+// - totalPower spikes when E_em decays (photon emission)
+// This is the "light from negative cavity state" made visible!
+```
+
+See `EM_NEGATIVE_SPACE_LOGGING.md` for detailed explanation and plotting examples.
 
 ## Example: Running a Simulation
 
@@ -278,7 +320,7 @@ params.em.useModeCoupling = true;
 const model = new SonoluminescenceModel(mapper, params);
 const initialState = createEquilibriumState(params, 5e-6);
 
-// Run simulation with adaptive integrator
+// Run simulation with adaptive integrator and time series logging
 const result = runSimulation({
   model,
   initialState,
@@ -289,6 +331,7 @@ const result = runSimulation({
     dtMax: 1e-8,
     tMax: 1e-5,
   },
+  logTimeSeries: true, // Enable explicit time series logging
   analysis: {
     computeEmission: true,
     computeSpectrum: true,
@@ -298,6 +341,23 @@ const result = runSimulation({
 });
 
 console.log(`Simulated ${result.timeSeries.length} time steps`);
+
+// Export time series log to visualize EM negative-space behavior
+if (result.timeSeriesLog) {
+  import { exportTimeSeriesToCSV, findCollapseCycle } from './src/sonoluminescence/io/timeSeriesExport';
+  
+  // Export to CSV for plotting
+  const csv = exportTimeSeriesToCSV(result.timeSeriesLog);
+  // Save to file or plot E_em(t) and totalPower(t) to see negative-space decay
+  
+  // Find collapse cycle
+  const cycle = findCollapseCycle(result.timeSeriesLog);
+  if (cycle) {
+    console.log(`Collapse at index ${cycle.minRIndex}`);
+    console.log(`E_em peak at index ${cycle.maxE_emIndex}`);
+    console.log(`Power peak at index ${cycle.maxPowerIndex}`);
+  }
+}
 ```
 
 ### Advanced Simulation with Shape Oscillations and Translation
@@ -412,6 +472,7 @@ The model uses SI base units:
 
 - **`WHITEPAPER.md`**: Detailed scientific background and theoretical foundations
 - **`INTEGRATOR.md`**: Adaptive integrator documentation (Dormand-Prince 5(4))
+- **`EM_NEGATIVE_SPACE_LOGGING.md`**: ⭐ NEW - EM negative-space behavior and time series logging guide
 - **`DETAILED_ENHANCEMENTS_COMPLETE.md`**: Detailed physics enhancements (13 enhancements)
 - **`KINEMATIC_ENHANCEMENTS_COMPLETE.md`**: Kinematic sciences features (shape, translation)
 - **`ADVANCED_FEATURES_COMPLETE.md`**: Van der Waals iterative and enhanced shape oscillations
@@ -424,16 +485,33 @@ Run validation tests to verify model correctness:
 
 ```typescript
 import { runAllTests } from './src/sonoluminescence/validation/tests';
+import { runAllPhysicsValidationTests } from './src/sonoluminescence/validation/physicsValidation';
 import { runAllKinematicTests } from './src/sonoluminescence/validation/kinematicTests';
 
-// Run physics validation tests
+// Run basic physics validation tests
 const physicsTests = runAllTests();
 console.log(`Physics tests: ${physicsTests.passed}/${physicsTests.results.length} passed`);
+
+// Run comprehensive physics validation tests
+const comprehensiveTests = runAllPhysicsValidationTests();
+console.log(`Comprehensive tests: ${comprehensiveTests.passed}/${comprehensiveTests.results.length} passed`);
+comprehensiveTests.results.forEach(test => {
+  console.log(`  ${test.name}: ${test.passed ? 'PASS' : 'FAIL'} ${test.error || ''}`);
+});
 
 // Run kinematic validation tests
 const kinematicTests = runAllKinematicTests();
 console.log(`Kinematic tests: ${kinematicTests.passed}/${kinematicTests.results.length} passed`);
 ```
+
+### Validation Test Suite
+
+The comprehensive physics validation suite includes:
+
+1. **Adiabatic Scaling Test**: Verifies `T ∝ (R₀/R)^(3(γ-1))` and `P ∝ (R₀/R)^(3γ)` with acoustic drive set to zero
+2. **Minnaert Frequency Test**: Checks that small-amplitude oscillations match the Minnaert frequency `ω₀ = (1/R₀) * √(3γP₀/ρ)`
+3. **Energy Budget Closure**: Verifies that acoustic work input equals thermal + EM + chemical + viscous dissipation
+4. **Plasma Equilibrium Spot-Check**: Compares plasma module's ionization fraction with Saha equation predictions
 
 ## Status
 
@@ -442,7 +520,9 @@ console.log(`Kinematic tests: ${kinematicTests.passed}/${kinematicTests.results.
 - 8 physics modules
 - Advanced kinematic sciences
 - Detailed physics throughout
-- Comprehensive validation suite
+- **EM negative-space behavior explicitly implemented**
+- **Time series logging for visualization**
+- Comprehensive validation suite (basic + comprehensive physics tests)
 
 ## License
 

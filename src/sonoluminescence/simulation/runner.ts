@@ -39,12 +39,27 @@ export interface SimulationConfig {
     computeStability?: boolean;
     computeSpectrum?: boolean;
   };
+  logTimeSeries?: boolean; // Enable explicit time series logging (R, Pg, T, ne, Te, E_em, totalPower)
   progressCallback?: (progress: number, t: number) => void;
+}
+
+export interface TimeSeriesLog {
+  t: number;
+  R: number;
+  Pg: number;
+  T: number;
+  ne: number;
+  Te: number;
+  E_em: number;
+  totalPower: number;
+  Rdot: number;
+  dPg_dt?: number; // Optional: pressure derivative magnitude
 }
 
 export interface SimulationResult {
   timeSeries: IntegrationResult;
   states: BubbleFullState[];
+  timeSeriesLog?: TimeSeriesLog[]; // Explicit logging of key variables
   analysis?: {
     emissions?: EmissionSnapshot[];
     gradients?: GradientMetrics[];
@@ -102,6 +117,35 @@ export function runSimulation(config: SimulationConfig): SimulationResult {
     timeSeries,
     states,
   };
+
+  // Explicit time series logging (R, Pg, T, ne, Te, E_em, totalPower)
+  if (config.logTimeSeries) {
+    result.timeSeriesLog = states.map((state, i) => {
+      const emission = estimateEmission(state, false);
+      const t = timeSeries.t[i];
+      
+      // Compute dPg/dt if we have previous state
+      let dPg_dt: number | undefined;
+      if (i > 0) {
+        const dt = timeSeries.t[i] - timeSeries.t[i - 1];
+        const prevState = states[i - 1];
+        dPg_dt = Math.abs((state.gas.Pg - prevState.gas.Pg) / dt);
+      }
+      
+      return {
+        t,
+        R: state.hydro.R,
+        Pg: state.gas.Pg,
+        T: state.gas.T,
+        ne: state.plasma.ne,
+        Te: state.plasma.Te,
+        E_em: state.em.storedEnergy,
+        totalPower: emission.totalPower,
+        Rdot: state.hydro.Rdot,
+        dPg_dt,
+      };
+    });
+  }
 
   if (analysis.computeEmission || analysis.computeSpectrum) {
     result.analysis = result.analysis || {};
