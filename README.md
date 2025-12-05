@@ -35,6 +35,7 @@ Sonoluminescence is the phenomenon where collapsing bubbles in a liquid emit fla
 - **Validation Tests**: Adiabatic compression, Saha equilibrium, energy conservation
 - **Coupled Dynamics**: Proper interaction between all physics modules
 - **Diagnostics**: Energy budget tracking, stability analysis, extreme gradient detection
+- **Atomic/Subatomic Physics Tracking**: Comprehensive metrics for nuclear densities, MeV temperatures, quark-level conditions, exotic hadron formation, quantum field effects, fusion conditions, and Planck-scale proximity
 - **Presets**: Pre-configured parameter sets for common experimental conditions
 - **Type-Safe**: Full TypeScript implementation with strict typing
 
@@ -241,7 +242,20 @@ Pre-configured parameter sets for common experimental conditions:
 
 ### Diagnostics (`diagnostics.ts`)
 - `computeEnergyBudget()` - Energy flow tracking (acoustic, thermal, chemical, EM)
-- `detectExtremeGradients()` - Non-classical regime detection
+- `detectExtremeGradients()` - Non-classical regime detection with atomic/subatomic disturbance tracking
+- `computeAtomicSubatomicDisturbances()` - ⭐ **Comprehensive atomic/subatomic physics metrics**:
+  - **Nuclear conditions**: Density ratios, nuclear matter density proximity, MeV temperature scales
+  - **Strong force metrics**: Coupling constant, field strength, interaction range
+  - **Quark-level conditions**: Deconfinement proximity, quark-gluon-plasma phase transitions
+  - **Exotic hadron formation**: Tetraquark, pentaquark, hexaquark, hybrid meson, and glueball formation probabilities
+  - **Quark flavor tracking**: Energy thresholds for light, strange, charm, and heavy quark production
+  - **Quantum field effects**: QCD vacuum energy, vacuum fluctuations, Casimir effect, gluon field strength, color charge density
+  - **Nuclear fusion conditions**: Gamow factor, fusion cross-section, fusion rate estimates
+  - **Momentum space distributions**: Fermi energy, degeneracy pressure, quantum statistics relevance
+  - **Planck-scale physics**: Proximity to Planck density, length, and time scales
+  - **QCD phase diagram**: Classification of matter phase (hadronic, quark-gluon-plasma, crossover)
+  - **Accelerator comparisons**: Conditions comparable to LHC, RHIC, SPS
+  - **Probing depth**: Atomic, nuclear, quark, or Planck-scale physics relevance
 - `computePlasmaDiagnostics()` - Plasma frequency, Debye length, mean free path
 - `estimateRefractiveIndex()` - Effective refractive index from state: `n(r,t) = n_neutral + n_plasma`
 - `computeStabilityMetrics()` - Limit cycle detection, runaway heating checks
@@ -272,8 +286,17 @@ Pre-configured parameter sets for common experimental conditions:
   - Max E_em (stored energy in negative-space state)
   - Energy budget (via `computeEnergyBudget()`)
   - Extreme gradients (via `detectExtremeGradients()`)
+  - **Atomic/subatomic disturbances** (via `computeAtomicSubatomicDisturbances()`):
+    - Nuclear density ratios and MeV temperature scales
+    - Exotic hadron formation probabilities (tetraquarks, pentaquarks, hexaquarks, hybrid mesons, glueballs)
+    - Quark flavor thresholds and QCD phase transitions
+    - Quantum field effects (QCD vacuum, gluon fields, color charge)
+    - Nuclear fusion conditions and rates
+    - Momentum space distributions (Fermi energy, degeneracy)
+    - Planck-scale proximity and quantum gravity effects
+    - QCD phase diagram position
   - Mode squeezing metrics (pumped vs released energy)
-- `printCanonicalAnalysis()` - Human-readable output
+- `printCanonicalAnalysis()` - Human-readable output with detailed atomic/subatomic metrics
 
 ### Visualization (`scripts/collapseVisualization.ts`) ⭐ NEW
 - `generateCollapseVisualizationData()` - Export CSV for plotting R(t), T(t), ne(t), E_em(t), totalPower(t)
@@ -349,6 +372,12 @@ runCanonicalCollapseAnalysis();
 // - Max E_em (stored energy in negative-space state)
 // - Energy budget
 // - Extreme gradients
+// - Atomic/subatomic disturbances:
+//   - Nuclear density ratios and MeV temperatures
+//   - Exotic hadron formation probabilities (tetraquarks, pentaquarks, etc.)
+//   - Quark flavor thresholds and QCD phase transitions
+//   - Quantum field effects and fusion conditions
+//   - Planck-scale proximity
 // - Mode squeezing metrics (pumped vs released energy)
 // - Visualization data for plotting
 ```
@@ -552,6 +581,30 @@ The model uses SI base units:
 
 ## Advanced Features
 
+### Atomic/Subatomic Physics Tracking ⭐ NEW
+
+The model now tracks **atomic and subatomic-level disturbances** during extreme bubble collapse conditions, connecting macroscopic sonoluminescence gradients to fundamental particle physics:
+
+- **Nuclear Density Conditions**: Tracks proximity to nuclear matter density (~2.3×10¹⁷ kg/m³), enabling conditions where nuclear physics becomes relevant
+- **MeV Temperature Scales**: Monitors temperatures approaching MeV scales (1 MeV = 1.16×10¹⁰ K), where nuclear binding energies and quark production become possible
+- **Strong Force Metrics**: Estimates strong coupling constant (α_s), field strength, and interaction range as conditions approach nuclear scales
+- **Quark-Level Physics**: Detects proximity to quark deconfinement transition (~150 MeV), where quarks and gluons are no longer confined within hadrons
+- **Exotic Hadron Formation**: Estimates formation probabilities for:
+  - **Tetraquarks**: Four-quark states (like CERN's all-charm tetraquarks)
+  - **Pentaquarks**: Five-quark states
+  - **Hexaquarks**: Six-quark dibaryon states
+  - **Hybrid Mesons**: Quark-gluon hybrid states
+  - **Glueballs**: Pure gluon states
+- **Quark Flavor Tracking**: Determines energy thresholds for producing different quark flavors (up, down, strange, charm, bottom, top)
+- **Quantum Field Effects**: Estimates QCD vacuum energy, vacuum fluctuations, Casimir effect, gluon field strength, and color charge density
+- **Nuclear Fusion Conditions**: Detects conditions approaching nuclear fusion, with Gamow factor, cross-section, and rate estimates
+- **Momentum Space Distributions**: Computes Fermi energy, degeneracy pressure, and quantum statistics relevance
+- **Planck-Scale Proximity**: Monitors approach to Planck density, length, and time scales, where quantum gravity effects may become relevant
+- **QCD Phase Diagram**: Classifies matter phase (hadronic, quark-gluon-plasma, crossover) based on temperature and density
+- **Accelerator Comparisons**: Compares conditions to LHC, RHIC, and SPS experiments
+
+This feature directly connects the extreme gradients in sonoluminescence (high compression rates, MeV temperatures, nuclear densities) to the same physics scales explored at particle accelerators like CERN, where exotic hadrons like tetraquarks are discovered.
+
 ### Cavity-QED Formal Subsystem ⭐ NEW
 
 The EM cavity module is now a **formal cavity-QED subsystem** with:
@@ -645,7 +698,9 @@ The comprehensive physics validation suite includes:
 - Detailed physics throughout
 - **EM negative-space behavior explicitly implemented**
 - **Formal cavity-QED subsystem** with refractive index effects, dynamic Q, radiation backreaction
-- **Canonical analysis script** - "This is what Sonogon tells us about a collapsing argon bubble"
+- **Atomic/subatomic physics tracking** - Comprehensive metrics connecting extreme gradients to nuclear, quark-level, and Planck-scale physics
+- **Exotic hadron formation tracking** - Tetraquark, pentaquark, hexaquark, hybrid meson, and glueball probabilities
+- **Canonical analysis script** - "This is what Sonogon tells us about a collapsing argon bubble" with atomic/subatomic disturbance metrics
 - **Visualization tools** - "Collapse emits/decays inside a negative space" plots
 - **Time series logging** for visualization
 - **Comprehensive validation suite** with exact formulas and numeric tolerances

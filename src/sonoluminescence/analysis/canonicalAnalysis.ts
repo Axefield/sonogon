@@ -4,7 +4,7 @@
 import { BubbleFullState } from "../model/types";
 import { SimulationResult } from "../simulation/runner";
 import { estimateEmission } from "./observables";
-import { computeEnergyBudget, detectExtremeGradients, computeModeSqueezingMetrics, EnergyBudget } from "./diagnostics";
+import { computeEnergyBudget, detectExtremeGradients, computeModeSqueezingMetrics, computeAtomicSubatomicDisturbances, EnergyBudget } from "./diagnostics";
 
 export interface CanonicalAnalysisResult {
   // Peak values
@@ -43,7 +43,7 @@ export interface CanonicalAnalysisResult {
     totalEnergy: number;
   };
   
-  // Extreme gradients
+  // Extreme gradients (with atomic/subatomic disturbances)
   extremeGradients: {
     detected: boolean;
     maxGradient: number;
@@ -54,6 +54,7 @@ export interface CanonicalAnalysisResult {
       dPg_dt: number;
       dT_dt: number;
     };
+    atomicDisturbances?: ReturnType<typeof computeAtomicSubatomicDisturbances>;
   };
   
   // Mode squeezing metrics (at peak E_em)
@@ -185,6 +186,7 @@ export function performCanonicalAnalysis(
         dPg_dt: gradientResult.metrics.dPgdt,
         dT_dt: gradientResult.metrics.dTdt,
       },
+      atomicDisturbances: gradientResult.atomicDisturbances,
     };
   } else {
     extremeGradients = {
@@ -193,6 +195,7 @@ export function performCanonicalAnalysis(
       time: timeSeries.t[0],
       index: 0,
       metrics: { dR_dt: 0, dPg_dt: 0, dT_dt: 0 },
+      atomicDisturbances: undefined,
     };
   }
   
@@ -275,10 +278,85 @@ export function printCanonicalAnalysis(analysis: CanonicalAnalysisResult): void 
   console.log(`  Detected: ${analysis.extremeGradients.detected}`);
   console.log(`  Max Gradient: ${analysis.extremeGradients.maxGradient.toExponential(2)}`);
   console.log(`  Time: ${analysis.extremeGradients.time.toExponential(2)} s`);
-  console.log(`  Metrics:`);
-  console.log(`    dR/dt: ${analysis.extremeGradients.metrics.dR_dt.toExponential(2)} m/s`);
-  console.log(`    dPg/dt: ${analysis.extremeGradients.metrics.dPg_dt.toExponential(2)} Pa/s`);
-  console.log(`    dT/dt: ${analysis.extremeGradients.metrics.dT_dt.toExponential(2)} K/s`);
+  if (analysis.extremeGradients.detected) {
+    console.log(`  Metrics:`);
+    console.log(`    dR/dt: ${analysis.extremeGradients.metrics.dR_dt.toExponential(2)} m/s`);
+    console.log(`    dPg/dt: ${analysis.extremeGradients.metrics.dPg_dt.toExponential(2)} Pa/s`);
+    console.log(`    dT/dt: ${analysis.extremeGradients.metrics.dT_dt.toExponential(2)} K/s`);
+    
+    // Atomic/subatomic level disturbances (EXPANDED)
+    if (analysis.extremeGradients.atomicDisturbances) {
+      const ad = analysis.extremeGradients.atomicDisturbances;
+      console.log(`\n  ATOMIC/SUBATOMIC DISTURBANCES (FULLY EXPANDED):`);
+      console.log(`    Nuclear Density: ${ad.nuclearDensityReached} (ratio: ${ad.nuclearDensityRatio.toExponential(2)}, density: ${ad.massDensity.toExponential(2)} kg/m³)`);
+      console.log(`    Temperature: ${ad.temperatureMeV.toExponential(2)} MeV (${ad.mevTemperatureReached ? 'MeV scale reached' : 'below MeV scale'})`);
+      console.log(`    Deconfinement Proximity: ${(ad.deconfinementProximity * 100).toFixed(2)}% (T/T_deconfinement)`);
+      console.log(`    Strong Force: ${ad.strongForceRelevant ? 'RELEVANT' : 'not relevant'} (α_s = ${ad.strongCouplingConstant.toFixed(3)}, range = ${ad.strongForceRange.toExponential(2)} m)`);
+      console.log(`    Quark-Level: ${ad.quarkLevelConditions ? 'YES' : 'no'} (approaching deconfinement: ${ad.approachingQuarkDeconfinement})`);
+      console.log(`    Probing Depth: ${ad.probingDepth.toUpperCase()}`);
+      
+      console.log(`\n    EXOTIC HADRON FORMATION (EXPANDED):`);
+      console.log(`      Tetraquark Probability: ${(ad.tetraquarkFormationProbability * 100).toFixed(4)}%`);
+      console.log(`      Pentaquark Probability: ${(ad.pentaquarkFormationProbability * 100).toFixed(4)}%`);
+      console.log(`      Hexaquark Probability: ${(ad.hexaquarkFormationProbability * 100).toFixed(4)}% (dibaryons)`);
+      console.log(`      Hybrid Meson Probability: ${(ad.hybridMesonFormationProbability * 100).toFixed(4)}% (quark+gluon)`);
+      console.log(`      Glueball Probability: ${(ad.glueballFormationProbability * 100).toFixed(4)}% (pure gluon)`);
+      console.log(`      Multi-Quark Formation Rate: ${ad.multiQuarkStateFormationRate.toExponential(2)} 1/s`);
+      
+      console.log(`\n    QUARK FLAVOR TRACKING:`);
+      console.log(`      Quark Flavor Relevant: ${ad.quarkFlavorRelevant}`);
+      console.log(`      Light Quark Energy: ${ad.lightQuarkEnergy.toExponential(2)} MeV`);
+      console.log(`      Strange Quark Threshold: ${ad.strangeQuarkThreshold ? 'REACHED' : 'not reached'}`);
+      console.log(`      Charm Quark Threshold: ${ad.charmQuarkThreshold ? 'REACHED' : 'not reached'}`);
+      console.log(`      Heavy Quark Production: ${ad.heavyQuarkProductionPossible ? 'POSSIBLE' : 'not possible'}`);
+      
+      console.log(`\n    QUANTUM FIELD EFFECTS:`);
+      console.log(`      QCD Vacuum Energy: ${ad.qcdVacuumEnergy.toExponential(2)} J/m³`);
+      console.log(`      Vacuum Fluctuations Relevant: ${ad.vacuumFluctuationsRelevant}`);
+      console.log(`      Casimir Effect Estimate: ${ad.casimirEffectEstimate.toExponential(2)} J`);
+      console.log(`      Gluon Field Strength: ${ad.gluonFieldStrength.toExponential(2)} T (equivalent)`);
+      console.log(`      Color Charge Density: ${ad.colorChargeDensity.toExponential(2)} (normalized)`);
+      
+      console.log(`\n    NUCLEAR FUSION CONDITIONS:`);
+      console.log(`      Fusion Conditions Approached: ${ad.fusionConditionsApproached}`);
+      console.log(`      Fusion Cross-Section: ${ad.fusionCrossSection.toExponential(2)} m²`);
+      console.log(`      Gamow Factor: ${ad.gamowFactor.toExponential(2)}`);
+      console.log(`      Fusion Rate: ${ad.fusionRate.toExponential(2)} 1/s`);
+      
+      console.log(`\n    MOMENTUM SPACE DISTRIBUTIONS:`);
+      console.log(`      Fermi Energy: ${ad.fermiEnergy.toExponential(2)} J`);
+      console.log(`      Degeneracy Pressure: ${ad.degeneracyPressure.toExponential(2)} Pa`);
+      console.log(`      Quantum Statistics Relevant: ${ad.quantumStatisticsRelevant} (Fermi-Dirac vs classical)`);
+      console.log(`      Fermi Momentum: ${ad.fermiMomentum.toExponential(2)} kg·m/s`);
+      console.log(`      Degeneracy Parameter: ${ad.degeneracyParameter.toExponential(2)} (n·λ³)`);
+      
+      console.log(`\n    PLANCK-SCALE PHYSICS:`);
+      console.log(`      Approaching Planck Scale: ${ad.approachingPlanckScale}`);
+      console.log(`      Planck Density Ratio: ${ad.planckDensityRatio.toExponential(2)}`);
+      console.log(`      Planck Length Ratio: ${ad.planckLengthRatio.toExponential(2)}`);
+      console.log(`      Planck Time Ratio: ${ad.planckTimeRatio.toExponential(2)}`);
+      console.log(`      Quantum Gravity Effects Possible: ${ad.quantumGravityEffectsPossible}`);
+      
+      console.log(`\n    NUCLEAR STRUCTURE:`);
+      console.log(`      Structure Affected: ${ad.nuclearStructureAffected} (thermal/binding ratio: ${ad.nuclearBindingEnergyRatio.toExponential(2)})`);
+      console.log(`      Estimated Nuclear Radius: ${ad.nuclearRadius.toExponential(2)} m`);
+      
+      console.log(`\n    QCD PHASE DIAGRAM:`);
+      console.log(`      Phase: ${ad.qcdPhase.toUpperCase()}`);
+      console.log(`      Position: T/T_deconfinement = ${ad.qcdPhaseDiagramPosition.temperatureRatio.toExponential(2)}, ρ/ρ_nuclear = ${ad.qcdPhaseDiagramPosition.densityRatio.toExponential(2)}`);
+      
+      console.log(`\n    ACCELERATOR COMPARISON:`);
+      console.log(`      LHC Energy Ratio: ${ad.lhcEnergyRatio.toExponential(2)} (${ad.comparableToLHC ? 'comparable regime' : 'far below'})`);
+      console.log(`      RHIC Comparable: ${ad.acceleratorConditions.comparableToRHIC}`);
+      console.log(`      SPS Comparable: ${ad.acceleratorConditions.comparableToSPS}`);
+      
+      console.log(`\n    TIME SCALES:`);
+      console.log(`      Nuclear Process: ${ad.nuclearTimeScale.toExponential(2)} s`);
+      console.log(`      Strong Interaction: ${ad.strongInteractionTimeScale.toExponential(2)} s`);
+      console.log(`      Fusion: ${ad.fusionTimeScale.toExponential(2)} s`);
+      console.log(`      Planck: ${ad.planckTimeScale.toExponential(2)} s`);
+    }
+  }
   
   console.log("\nMODE SQUEEZING METRICS (NEGATIVE-SPACE BEHAVIOR):");
   console.log(`  Pumped Energy: ${analysis.modeSqueezing.pumpedEnergy.toExponential(2)} J`);

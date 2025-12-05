@@ -14,6 +14,12 @@ export declare const Constants: {
     readonly h: 6.62607015e-34;
     readonly hbar: 1.054571817e-34;
     readonly sigma_SB: 5.670374419e-8;
+    readonly alpha_s_QCD: 0.1181;
+    readonly nuclearBindingEnergyPerNucleon: number;
+    readonly deconfinementTemperature: 150000000;
+    readonly nuclearMatterDensity: 230000000000000000;
+    readonly nuclearRadiusConstant: 1.2e-15;
+    readonly fermiMomentumNuclear: 1.36e-19;
 };
 /**
  * Common physical properties (SI units)

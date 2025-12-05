@@ -31,6 +31,18 @@ exports.Constants = {
     hbar: 1.054571817e-34, // J·s
     // Stefan-Boltzmann constant
     sigma_SB: 5.670374419e-8, // W/(m²·K⁴)
+    // Nuclear physics constants
+    // Strong coupling constant (varies with energy scale)
+    alpha_s_QCD: 0.1181, // At Z boson mass scale (91.2 GeV)
+    // Nuclear binding energy per nucleon (typical)
+    nuclearBindingEnergyPerNucleon: 8.0 * 1.602176634e-13, // ~8 MeV = 1.28e-12 J
+    // Quark deconfinement temperature (QCD phase transition)
+    deconfinementTemperature: 150e6, // ~150 MeV = 1.74e12 K
+    // Nuclear matter properties
+    nuclearMatterDensity: 2.3e17, // kg/m³ (saturation density)
+    nuclearRadiusConstant: 1.2e-15, // m (r = r0 * A^(1/3), r0 ≈ 1.2 fm)
+    // Fermi momentum (nuclear matter)
+    fermiMomentumNuclear: 1.36e-19, // kg·m/s (p_F ≈ 250 MeV/c)
 };
 /**
  * Common physical properties (SI units)

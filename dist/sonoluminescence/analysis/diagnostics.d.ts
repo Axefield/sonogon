@@ -48,6 +48,7 @@ export declare function detectExtremeGradients(statePrev: BubbleFullState, state
     detected: boolean;
     metrics: GradientMetrics;
     spatialGradients: ReturnType<typeof computeSpatialGradients>;
+    atomicDisturbances?: ReturnType<typeof computeAtomicSubatomicDisturbances>;
 };
 /**
  * Estimate refractive index from bubble state
@@ -72,6 +73,94 @@ export declare function computePlasmaDiagnostics(state: BubbleFullState, optical
  * to assess system stability.
  */
 export declare function computeStabilityMetrics(states: BubbleFullState[], times: number[]): StabilityMetrics;
+/**
+ * Compute atomic/subatomic level disturbance metrics
+ *
+ * At extreme gradients during collapse, conditions approach regimes where:
+ * - Nuclear densities are reached (~10¹⁸ kg/m³)
+ * - Temperatures reach MeV scales (nuclear binding energies)
+ * - Strong force effects may become relevant
+ * - Atomic structure is probed at fundamental levels
+ *
+ * This function tracks conditions where exotic hadron-like states might form
+ * or where quark-level physics might manifest, similar to the tetraquark
+ * discoveries at CERN where extreme conditions reveal multi-quark bound states.
+ *
+ * The connection: extreme gradients in sonoluminescence create transient
+ * conditions where atomic-level disturbances probe deeper into subatomic structure.
+ *
+ * EXPANDED VERSION: Now includes detailed nuclear physics, quark deconfinement
+ * conditions, exotic hadron formation probabilities, comparison to accelerator conditions,
+ * quark flavor tracking, quantum field effects, nuclear fusion conditions, momentum space
+ * distributions, and Planck-scale physics.
+ */
+export declare function computeAtomicSubatomicDisturbances(state: BubbleFullState): {
+    nuclearDensityReached: boolean;
+    nuclearDensityRatio: number;
+    massDensity: number;
+    mevTemperatureReached: boolean;
+    temperatureMeV: number;
+    temperatureRatioToDeconfinement: number;
+    strongForceRelevant: boolean;
+    strongForceFieldEstimate: number;
+    strongCouplingConstant: number;
+    strongForceRange: number;
+    quarkLevelConditions: boolean;
+    approachingQuarkDeconfinement: boolean;
+    deconfinementProximity: number;
+    exoticStateFormationPossible: boolean;
+    tetraquarkFormationProbability: number;
+    pentaquarkFormationProbability: number;
+    hexaquarkFormationProbability: number;
+    hybridMesonFormationProbability: number;
+    glueballFormationProbability: number;
+    multiQuarkStateFormationRate: number;
+    quarkFlavorRelevant: boolean;
+    lightQuarkEnergy: number;
+    charmQuarkThreshold: boolean;
+    strangeQuarkThreshold: boolean;
+    heavyQuarkProductionPossible: boolean;
+    qcdVacuumEnergy: number;
+    vacuumFluctuationsRelevant: boolean;
+    casimirEffectEstimate: number;
+    gluonFieldStrength: number;
+    colorChargeDensity: number;
+    fusionConditionsApproached: boolean;
+    fusionCrossSection: number;
+    gamowFactor: number;
+    fusionRate: number;
+    fermiEnergy: number;
+    degeneracyPressure: number;
+    quantumStatisticsRelevant: boolean;
+    fermiMomentum: number;
+    degeneracyParameter: number;
+    approachingPlanckScale: boolean;
+    planckDensityRatio: number;
+    planckLengthRatio: number;
+    planckTimeRatio: number;
+    quantumGravityEffectsPossible: boolean;
+    nuclearStructureAffected: boolean;
+    nuclearBindingEnergyRatio: number;
+    nuclearRadius: number;
+    comparableToLHC: boolean;
+    lhcEnergyRatio: number;
+    acceleratorConditions: {
+        comparableToLHC: boolean;
+        comparableToRHIC: boolean;
+        comparableToSPS: boolean;
+    };
+    qcdPhase: 'hadronic' | 'quark-gluon-plasma' | 'crossover' | 'unknown';
+    qcdPhaseDiagramPosition: {
+        temperatureRatio: number;
+        densityRatio: number;
+    };
+    atomicStructureProbing: boolean;
+    probingDepth: 'atomic' | 'nuclear' | 'quark' | 'planck' | 'none';
+    nuclearTimeScale: number;
+    strongInteractionTimeScale: number;
+    fusionTimeScale: number;
+    planckTimeScale: number;
+};
 /**
  * Compute mode squeezing metrics
  *
