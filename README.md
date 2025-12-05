@@ -110,9 +110,12 @@ src/sonoluminescence/
 ├── io/
 │   ├── export.ts          # CSV and JSON export utilities
 │   └── timeSeriesExport.ts  # Time series log export (R, Pg, T, ne, Te, E_em, totalPower) ⭐
+├── scripts/
+│   ├── canonicalCollapseAnalysis.ts  # Main canonical analysis script ⭐
+│   └── collapseVisualization.ts      # Visualization script ⭐
 └── validation/
     ├── tests.ts           # Basic validation tests
-    ├── physicsValidation.ts  # Comprehensive physics validation tests ⭐
+    ├── physicsValidation.ts  # Comprehensive physics validation tests (exact formulas) ⭐
     └── kinematicTests.ts  # Kinematic validation tests
 ```
 
@@ -179,14 +182,21 @@ Enhanced with detailed collision models:
 - Electron temperature dynamics with proper energy exchange
 - Plasma frequency calculation
 
-### EM Cavity (`emCavity.ts`)
-Enhanced with advanced features and explicit negative-space behavior:
+### EM Cavity (`emCavity.ts`) ⭐ CAVITY-QED FORMAL SUBSYSTEM
+Enhanced with formal cavity-QED physics and explicit negative-space behavior:
 - **Cross-mode coupling** (mode mixing, energy transfer)
+- **EM mode frequency shifting**: `ω_k(R(t), n(r,t))` - frequency depends on radius and refractive index
+- **Mode squeezing equations**: `ȧk = f(ak, R, Ṙ, ∂n/∂t)` - includes refractive index time derivative
 - **Frequency-dependent quality factor** Q(ω)
+- **Dynamic Q-factor**: `Q(R, n, ω)` - depends on radius, refractive index, and frequency
 - **Detailed parametric pumping** (quantum Hamiltonian)
 - **Negative-space behavior**: Quantum squeezed vacuum state with explicit Wigner function representation
 - **Parametric amplification**: `H = g(t) * (a†² + a²)` creates squeezed states during compression
-- Mode frequency modulation by bubble radius
+- **Stored-energy pump from gradients**: Explicit gradient-based pumping (`|Rdot|`, `|dPg/dt|`, `|∇P|`)
+- **Radiation backreaction**: EM field exerts force on bubble boundary
+- **Bremsstrahlung emission**: Energy from electron-ion collisions added to stored energy
+- **Recombination emission**: Energy from electron-ion recombination added to stored energy
+- Mode frequency modulation by bubble radius and refractive index
 - Plasma frequency cutoff effects
 - Stored energy pumping and decay: `E_em` rises during extreme gradients, decays as photons
 
@@ -221,7 +231,10 @@ Pre-configured parameter sets for common experimental conditions:
 ## Analysis Tools
 
 ### Observables (`observables.ts`)
-- `estimateEmission()` - Total power (blackbody + bremsstrahlung + EM decay)
+- `estimateEmission()` - Total power with explicit breakdown:
+  - **Blackbody-ish T term**: `P_bb = σ * T⁴ * A`
+  - **Bremsstrahlung from ne, Te**: `P_brems ~ ne² * sqrt(Te) * V`
+  - **EM decay from E_em**: `P_em = E_em / τ` (light from negative cavity state)
 - `computeSpectralDistribution()` - Wavelength-dependent emission spectrum
 - `computeGradients()` - Temporal gradient detection
 - `computeSpatialGradients()` - Spatial gradient estimates
@@ -230,9 +243,12 @@ Pre-configured parameter sets for common experimental conditions:
 - `computeEnergyBudget()` - Energy flow tracking (acoustic, thermal, chemical, EM)
 - `detectExtremeGradients()` - Non-classical regime detection
 - `computePlasmaDiagnostics()` - Plasma frequency, Debye length, mean free path
-- `estimateRefractiveIndex()` - Effective refractive index from state
+- `estimateRefractiveIndex()` - Effective refractive index from state: `n(r,t) = n_neutral + n_plasma`
 - `computeStabilityMetrics()` - Limit cycle detection, runaway heating checks
-- `computeModeSqueezingMetrics()` - Parametric amplification analysis
+- `computeModeSqueezingMetrics()` - Parametric amplification analysis with pumped vs released energy:
+  - Reports **pumped energy** (into modes during compression)
+  - Reports **released energy** (from modes as photons)
+  - Quantifies negative-space behavior
 
 ### Initial States (`initialStates.ts`)
 - `createEquilibriumState()` - Generate equilibrium initial state
@@ -249,6 +265,22 @@ Pre-configured parameter sets for common experimental conditions:
 - Built-in analysis options
 - **EM negative-space visualization**: Track E_em rise during collapse and decay during photon emission
 
+### Canonical Analysis (`analysis/canonicalAnalysis.ts`) ⭐ NEW
+- `performCanonicalAnalysis()` - **"This is what Sonogon tells us about a collapsing argon bubble"** script
+  - Peak emission (with breakdown by component)
+  - Max electron temperature
+  - Max E_em (stored energy in negative-space state)
+  - Energy budget (via `computeEnergyBudget()`)
+  - Extreme gradients (via `detectExtremeGradients()`)
+  - Mode squeezing metrics (pumped vs released energy)
+- `printCanonicalAnalysis()` - Human-readable output
+
+### Visualization (`scripts/collapseVisualization.ts`) ⭐ NEW
+- `generateCollapseVisualizationData()` - Export CSV for plotting R(t), T(t), ne(t), E_em(t), totalPower(t)
+- `printVisualizationInstructions()` - Python plotting code
+- **"Collapse emits/decays inside a negative space"** visualization
+- Automatic collapse cycle detection
+
 ### Export Utilities (`io/export.ts`, `io/timeSeriesExport.ts`)
 - `exportToCSV()` - Export time series to CSV
 - `exportToJSON()` - Export complete state history
@@ -256,6 +288,13 @@ Pre-configured parameter sets for common experimental conditions:
 - `exportTimeSeriesToCSV()` - Export explicit time series log (R, Pg, T, ne, Te, E_em, totalPower)
 - `exportTimeSeriesToJSON()` - Export time series log as JSON
 - `findCollapseCycle()` - Automatically identify collapse cycle windows
+
+### Canonical Scripts (`scripts/`) ⭐ NEW
+- `canonicalCollapseAnalysis.ts` - Main script for canonical analysis
+  - Runs simulation with all advanced features
+  - Performs canonical analysis
+  - Generates visualization data
+  - Ready-to-use entry point
 
 ### Validation Tests (`validation/`)
 - `tests.ts` - Adiabatic compression, Saha equilibrium, energy conservation, plasma frequency
@@ -293,6 +332,77 @@ const csv = exportTimeSeriesToCSV(result.timeSeriesLog!);
 ```
 
 See `EM_NEGATIVE_SPACE_LOGGING.md` for detailed explanation and plotting examples.
+
+## Example: Canonical Analysis
+
+### Run Canonical "This is what Sonogon tells us" Analysis
+
+```typescript
+import { runCanonicalCollapseAnalysis } from './src/sonoluminescence/scripts/canonicalCollapseAnalysis';
+
+// Run the canonical analysis script
+runCanonicalCollapseAnalysis();
+
+// Outputs:
+// - Peak emission (with breakdown: blackbody, bremsstrahlung, EM decay)
+// - Max electron temperature
+// - Max E_em (stored energy in negative-space state)
+// - Energy budget
+// - Extreme gradients
+// - Mode squeezing metrics (pumped vs released energy)
+// - Visualization data for plotting
+```
+
+### Manual Canonical Analysis
+
+```typescript
+import { DefaultStateVectorMapper } from './src/sonoluminescence/core/statevector';
+import { SonoluminescenceModel } from './src/sonoluminescence/model/sonoluminescenceModel';
+import { createArgonBubblePreset } from './src/sonoluminescence/config/presets';
+import { createEquilibriumState } from './src/sonoluminescence/analysis/initialStates';
+import { runSimulation } from './src/sonoluminescence/simulation/runner';
+import { performCanonicalAnalysis, printCanonicalAnalysis } from './src/sonoluminescence/analysis/canonicalAnalysis';
+import { generateCollapseVisualizationData } from './src/sonoluminescence/scripts/collapseVisualization';
+
+const mapper = new DefaultStateVectorMapper();
+const params = createArgonBubblePreset();
+
+// Enable all cavity-QED features
+params.em.useRefractiveIndexFrequencyShift = true;
+params.em.useDynamicQ = true;
+params.em.useRadiationBackreaction = true;
+params.em.includeBremsstrahlungEmission = true;
+params.em.includeRecombinationEmission = true;
+
+const model = new SonoluminescenceModel(mapper, params);
+const initialState = createEquilibriumState(params, 5e-6);
+
+// Run simulation with time series logging
+const result = runSimulation({
+  model,
+  initialState,
+  integratorOptions: {
+    adaptive: true,
+    tolerance: 1e-6,
+    dt: 1e-9,
+    tMax: 1e-5,
+  },
+  logTimeSeries: true, // Enable time series logging
+  analysis: {
+    computeEmission: true,
+    computeGradients: true,
+    computeEnergyBudget: true,
+  },
+});
+
+// Perform canonical analysis
+const analysis = performCanonicalAnalysis(result);
+printCanonicalAnalysis(analysis);
+
+// Generate visualization data
+const vizData = generateCollapseVisualizationData(result);
+// Plot R(t), T(t), ne(t), E_em(t), totalPower(t) to see "collapse emits/decays inside a negative space"
+```
 
 ## Example: Running a Simulation
 
@@ -442,6 +552,18 @@ The model uses SI base units:
 
 ## Advanced Features
 
+### Cavity-QED Formal Subsystem ⭐ NEW
+
+The EM cavity module is now a **formal cavity-QED subsystem** with:
+
+- **Refractive index frequency shift**: `ω_k(R(t), n(r,t))` - frequency depends on radius and refractive index
+- **Mode squeezing with ∂n/∂t**: `ȧk = f(ak, R, Ṙ, ∂n/∂t)` - refractive index time derivative included
+- **Dynamic Q-factor**: `Q(R, n, ω)` - depends on radius, refractive index, and frequency
+- **Radiation backreaction**: EM field exerts force on bubble boundary
+- **Bremsstrahlung + recombination emission**: Added to stored energy from plasma processes
+
+See `CAVITY_QED_ENHANCEMENTS.md` for detailed documentation.
+
 ### Detailed Physics Enhancements
 - **Heat Transfer**: Conduction, convection, and radiation models with proper boundary conditions
 - **Heat Capacity**: Temperature-dependent Cp/Cv for each species using statistical mechanics
@@ -472,7 +594,8 @@ The model uses SI base units:
 
 - **`WHITEPAPER.md`**: Detailed scientific background and theoretical foundations
 - **`INTEGRATOR.md`**: Adaptive integrator documentation (Dormand-Prince 5(4))
-- **`EM_NEGATIVE_SPACE_LOGGING.md`**: ⭐ NEW - EM negative-space behavior and time series logging guide
+- **`EM_NEGATIVE_SPACE_LOGGING.md`**: ⭐ EM negative-space behavior and time series logging guide
+- **`CAVITY_QED_ENHANCEMENTS.md`**: ⭐ NEW - Formal cavity-QED subsystem documentation
 - **`DETAILED_ENHANCEMENTS_COMPLETE.md`**: Detailed physics enhancements (13 enhancements)
 - **`KINEMATIC_ENHANCEMENTS_COMPLETE.md`**: Kinematic sciences features (shape, translation)
 - **`ADVANCED_FEATURES_COMPLETE.md`**: Van der Waals iterative and enhanced shape oscillations
@@ -521,8 +644,11 @@ The comprehensive physics validation suite includes:
 - Advanced kinematic sciences
 - Detailed physics throughout
 - **EM negative-space behavior explicitly implemented**
-- **Time series logging for visualization**
-- Comprehensive validation suite (basic + comprehensive physics tests)
+- **Formal cavity-QED subsystem** with refractive index effects, dynamic Q, radiation backreaction
+- **Canonical analysis script** - "This is what Sonogon tells us about a collapsing argon bubble"
+- **Visualization tools** - "Collapse emits/decays inside a negative space" plots
+- **Time series logging** for visualization
+- **Comprehensive validation suite** with exact formulas and numeric tolerances
 
 ## License
 
