@@ -289,29 +289,32 @@ dt // Time step for computing time derivatives
     let pumpTerm = params.pumpCoefficient * gradientMagnitude;
     const decayTerm = state.em.storedEnergy / Math.max(params.decayTime, 1e-12);
     // BREMSSTRAHLUNG + RECOMBINATION EMISSION ADDITIONS
-    let bremsstrahlungEmission = 0;
-    let recombinationEmission = 0;
+    // NOTE: These must be in units of POWER (W = J/s), not energy (J)
+    // dStoredEnergyDt = dE/dt is a rate, so all terms must be power rates
+    let bremsstrahlungEmission = 0; // Power [W]
+    let recombinationEmission = 0; // Power [W]
     if (params.includeBremsstrahlungEmission) {
-        // Bremsstrahlung power density: P ~ ne² * sqrt(Te)
+        // Bremsstrahlung power: P ~ ne² * sqrt(Te) * V
+        // This is already in units of power [W], use directly
         const volume = (4.0 / 3.0) * Math.PI * R * R * R;
         const bremsstrahlungPowerDensity = units_1.Calculations.bremsstrahlungPowerDensity(ne, Te);
         const bremsstrahlungPower = bremsstrahlungPowerDensity * volume;
-        // Convert power to energy rate (if dt available, otherwise use instantaneous)
-        const dt_safe = dt || 1e-12;
-        bremsstrahlungEmission = bremsstrahlungPower * dt_safe;
+        // Use power directly (dE/dt expects power, not energy)
+        bremsstrahlungEmission = bremsstrahlungPower;
     }
     if (params.includeRecombinationEmission) {
-        // Recombination emission: Energy released when electrons recombine with ions
-        // Estimate: P_recomb ~ ne * n_ions * α_recomb * E_ionization
-        // where α_recomb is recombination coefficient, E_ionization is ionization energy
+        // Recombination emission power: P_recomb ~ ne * n_ions * α_recomb * E_ionization * V
+        // where α_recomb is recombination coefficient [m³/s], E_ionization is ionization energy [J]
+        // This gives power [W] = [m⁻³] * [m⁻³] * [m³/s] * [J] * [m³] = [J/s] = [W]
         const n_ions = ne; // Assume n_ions ≈ ne (single ionization)
         const alpha_recomb = 2.6e-19; // Recombination coefficient [m³/s] (approximate)
         const E_ionization = 15.76 * units_1.Constants.e; // Argon ionization energy [J]
         const volume = (4.0 / 3.0) * Math.PI * R * R * R;
         const recombinationPower = ne * n_ions * alpha_recomb * E_ionization * volume;
-        const dt_safe = dt || 1e-12;
-        recombinationEmission = recombinationPower * dt_safe;
+        // Use power directly (dE/dt expects power, not energy)
+        recombinationEmission = recombinationPower;
     }
+    // dStoredEnergyDt = dE/dt [W] = pump [W] - decay [W] + bremsstrahlung [W] + recombination [W]
     const dStoredEnergyDt = pumpTerm - decayTerm + bremsstrahlungEmission + recombinationEmission;
     // RADIATION BACKREACTION TERM
     // The EM field exerts a force back on the bubble boundary
