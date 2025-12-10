@@ -679,7 +679,7 @@ function computeModeSqueezingMetrics(state, statePrev, dt) {
     };
 }
 /**
- * Compute shockwave diagnostics (pistol shrimp mechanism) ⭐ NEW
+ * Compute shockwave diagnostics (pistol shrimp mechanism)
  *
  * The pistol shrimp creates cavitation bubbles that collapse with extreme violence,
  * generating shockwaves up to 218 dB and temperatures comparable to the sun's surface.

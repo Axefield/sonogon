@@ -16,7 +16,7 @@ export declare function createXenonBubblePreset(): SonoluminescenceParams;
  */
 export declare function createHighIntensityPreset(): SonoluminescenceParams;
 /**
- * Preset: Pistol Shrimp (Alpheidae) ⭐ NEW
+ * Preset: Pistol Shrimp (Alpheidae)
  *
  * The pistol shrimp creates cavitation bubbles through rapid claw closure,
  * ejecting a high-speed water jet (30-60 m/s) that forms a cavitation bubble.

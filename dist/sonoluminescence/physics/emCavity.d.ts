@@ -20,6 +20,11 @@ export interface EmCavityParams {
     radiationBackreactionCoeff?: number;
     includeBremsstrahlungEmission?: boolean;
     includeRecombinationEmission?: boolean;
+    useMagneticFieldEffects?: boolean;
+    useFaradayRotation?: boolean;
+    staticMagneticField?: number;
+    magneticFieldCoupling?: number;
+    magneticContributionFactor?: number;
 }
 export interface EmDerivatives {
     dModes: {
@@ -27,6 +32,9 @@ export interface EmDerivatives {
         dIm: number;
     }[];
     dStoredEnergyDt: number;
+    magneticFieldAmplitude?: number[];
+    faradayRotationAngle?: number[];
+    magneticEnergy?: number;
 }
 /**
  * Compute EM mode + stored energy derivatives.

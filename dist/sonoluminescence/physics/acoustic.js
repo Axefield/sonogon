@@ -22,7 +22,7 @@ function computeAcousticState(t, acoustic, params, bubblePosition // Optional: a
     let jetActive = false;
     let shockwavePressure = 0;
     let shockwaveIntensity = 0;
-    // Jet-driven cavitation (pistol shrimp mechanism) ⭐ NEW
+    // Jet-driven cavitation (pistol shrimp mechanism) 
     if (params.jetDriven && params.jetVelocity !== undefined) {
         const jetDuration = params.jetDuration || 1e-4; // Default 0.1 ms
         const rho_water = 998.2; // kg/m³ (water density)
@@ -153,7 +153,7 @@ function computeAcousticState(t, acoustic, params, bubblePosition // Optional: a
             }
         }
     }
-    // Shockwave from bubble collapse (pistol shrimp) ⭐ NEW
+    // Shockwave from bubble collapse (pistol shrimp) 
     // The shockwave is generated when the bubble collapses rapidly
     // Intensity can reach 218 dB for pistol shrimp
     // We compute this based on bubble collapse rate (if available from state)

@@ -38,6 +38,7 @@ Sonoluminescence is the phenomenon where collapsing bubbles in a liquid emit fla
 - **Atomic/Subatomic Physics Tracking**: Comprehensive metrics for nuclear densities, MeV temperatures, quark-level conditions, exotic hadron formation, quantum field effects, fusion conditions, and Planck-scale proximity
 - **Presets**: Pre-configured parameter sets for common experimental conditions
 - **Pistol Shrimp Physics**: Jet-driven cavitation mechanism with shockwave tracking (218 dB intensity, 8,000°F temperatures)
+- **Magnetic Field Effects**: Light's magnetic field directly influences matter (17% visible, 70% IR contribution) - based on recent research
 - **Type-Safe**: Full TypeScript implementation with strict typing
 
 ## Installation
@@ -198,6 +199,12 @@ Enhanced with formal cavity-QED physics and explicit negative-space behavior:
 - **Radiation backreaction**: EM field exerts force on bubble boundary
 - **Bremsstrahlung emission**: Energy from electron-ion collisions added to stored energy
 - **Recombination emission**: Energy from electron-ion recombination added to stored energy
+- **Magnetic field effects**  (based on [recent research](https://www.sciencedaily.com/releases/2025/11/251120091945.htm)):
+  - **Magnetic field tracking**: B field amplitude computed from E field (B = n*E/c)
+  - **Faraday rotation**: Magnetic field rotates light polarization (θ = V * B₀ * L)
+  - **Magnetic energy contribution**: ~17% in visible spectrum, up to 70% in infrared
+  - **Magnetic torque effects**: Light's magnetic field directly influences atomic spins
+  - **First-order magnetic effects**: Overturns 180-year understanding that only E field matters
 - Mode frequency modulation by bubble radius and refractive index
 - Plasma frequency cutoff effects
 - Stored energy pumping and decay: `E_em` rises during extreme gradients, decays as photons
@@ -257,6 +264,12 @@ Pre-configured parameter sets for common experimental conditions:
   - Mach number (supersonic collapse detection)
   - Shockwave energy and propagation characteristics
   - Comparison to pistol shrimp conditions
+- `computeMagneticFieldDiagnostics()` - ⭐ **Magnetic field effects analysis**:
+  - Magnetic field amplitude from EM modes (B = n*E/c)
+  - Magnetic energy contribution to total EM energy
+  - Faraday rotation angles (if static B field present)
+  - Comparison to research findings (17% visible, 70% IR)
+  - First-order magnetic effects on light-matter interaction
 - `computeAtomicSubatomicDisturbances()` - ⭐ **Comprehensive atomic/subatomic physics metrics**:
   - **Nuclear conditions**: Density ratios, nuclear matter density proximity, MeV temperature scales
   - **Strong force metrics**: Coupling constant, field strength, interaction range
@@ -700,6 +713,7 @@ The EM cavity module is now a **formal cavity-QED subsystem** with:
 - **Dynamic Q-factor**: `Q(R, n, ω)` - depends on radius, refractive index, and frequency
 - **Radiation backreaction**: EM field exerts force on bubble boundary
 - **Bremsstrahlung + recombination emission**: Added to stored energy from plasma processes
+- **Magnetic field effects**: Light's magnetic field directly influences matter (see Magnetic Field Effects section above)
 
 See `CAVITY_QED_ENHANCEMENTS.md` for detailed documentation.
 
@@ -787,6 +801,7 @@ The comprehensive physics validation suite includes:
 - **Atomic/subatomic physics tracking** - Comprehensive metrics connecting extreme gradients to nuclear, quark-level, and Planck-scale physics
 - **Exotic hadron formation tracking** - Tetraquark, pentaquark, hexaquark, hybrid meson, and glueball probabilities
 - **Pistol shrimp physics** - Jet-driven cavitation with shockwave tracking (218 dB, 8,000°F temperatures)
+- **Magnetic field effects** - Light's magnetic field directly influences matter (17% visible, 70% IR contribution)
 - **Canonical analysis script** - "This is what Sonogon tells us about a collapsing argon bubble" with atomic/subatomic disturbance metrics
 - **Visualization tools** - "Collapse emits/decays inside a negative space" plots
 - **Time series logging** for visualization
