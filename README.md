@@ -37,6 +37,7 @@ Sonoluminescence is the phenomenon where collapsing bubbles in a liquid emit fla
 - **Diagnostics**: Energy budget tracking, stability analysis, extreme gradient detection
 - **Atomic/Subatomic Physics Tracking**: Comprehensive metrics for nuclear densities, MeV temperatures, quark-level conditions, exotic hadron formation, quantum field effects, fusion conditions, and Planck-scale proximity
 - **Presets**: Pre-configured parameter sets for common experimental conditions
+- **Pistol Shrimp Physics**: Jet-driven cavitation mechanism with shockwave tracking (218 dB intensity, 8,000°F temperatures)
 - **Type-Safe**: Full TypeScript implementation with strict typing
 
 ## Installation
@@ -148,7 +149,7 @@ Implements the Rayleigh-Plesset and Keller-Miksis equations:
 - **Keller-Miksis equation** for compressible liquid effects (supersonic collapse)
 - Uses actual gamma from thermo params (not hardcoded)
 
-### Shape Oscillations (`shapeOscillations.ts`) ⭐ NEW
+### Shape Oscillations (`shapeOscillations.ts`) 
 Non-spherical bubble dynamics using spherical harmonics:
 - **P2 (Quadrupole)** and **P4 (Hexadecapole)** modes
 - Natural frequencies from surface tension
@@ -158,7 +159,7 @@ Non-spherical bubble dynamics using spherical harmonics:
 - Amplitude-dependent frequency shifts
 - Effective radius computation
 
-### Bubble Translation (`bubbleTranslation.ts`) ⭐ NEW
+### Bubble Translation (`bubbleTranslation.ts`) 
 3D position and velocity dynamics:
 - **Primary Bjerknes force**: `F = -V * ∇P_acoustic`
 - **Drag forces**: Stokes drag and custom coefficients
@@ -213,12 +214,18 @@ Enhanced with pressure-dependent rates:
 - Three-body recombination: H + OH → H₂O
 
 ### Acoustic Driving (`acoustic.ts`)
-Enhanced with spatial gradients:
+Enhanced with spatial gradients and jet-driven cavitation:
 - Single and multi-frequency driving
 - Non-sinusoidal waveforms (square, sawtooth, custom)
 - **Acoustic field gradients**: `∇P_acoustic` and `∇²P_acoustic`
 - Standing wave patterns
 - Wave vector specification
+- **Jet-driven cavitation** (pistol shrimp mechanism) :
+  - Water jet velocity (30-60 m/s typical)
+  - Jet duration and nozzle area
+  - Jet direction vector
+  - Low-pressure zone creation (Bernoulli principle)
+  - Shockwave pressure and intensity tracking
 
 ## Presets
 
@@ -228,6 +235,7 @@ Pre-configured parameter sets for common experimental conditions:
 - `createArgonBubblePreset()` - Argon bubble (common for sonoluminescence)
 - `createXenonBubblePreset()` - Xenon bubble (high light yield)
 - `createHighIntensityPreset()` - Extreme driving conditions
+- `createPistolShrimpPreset()` - ⭐ **Pistol shrimp (Alpheidae)** - Jet-driven cavitation with extreme collapse conditions
 
 ## Analysis Tools
 
@@ -243,6 +251,12 @@ Pre-configured parameter sets for common experimental conditions:
 ### Diagnostics (`diagnostics.ts`)
 - `computeEnergyBudget()` - Energy flow tracking (acoustic, thermal, chemical, EM)
 - `detectExtremeGradients()` - Non-classical regime detection with atomic/subatomic disturbance tracking
+- `computeShockwaveDiagnostics()` - ⭐ **Pistol shrimp shockwave analysis**:
+  - Shockwave pressure from rapid bubble collapse
+  - Sound intensity in decibels (up to 218 dB for pistol shrimp)
+  - Mach number (supersonic collapse detection)
+  - Shockwave energy and propagation characteristics
+  - Comparison to pistol shrimp conditions
 - `computeAtomicSubatomicDisturbances()` - ⭐ **Comprehensive atomic/subatomic physics metrics**:
   - **Nuclear conditions**: Density ratios, nuclear matter density proximity, MeV temperature scales
   - **Strong force metrics**: Coupling constant, field strength, interaction range
@@ -279,7 +293,7 @@ Pre-configured parameter sets for common experimental conditions:
 - Built-in analysis options
 - **EM negative-space visualization**: Track E_em rise during collapse and decay during photon emission
 
-### Canonical Analysis (`analysis/canonicalAnalysis.ts`) ⭐ NEW
+### Canonical Analysis (`analysis/canonicalAnalysis.ts`) 
 - `performCanonicalAnalysis()` - **"This is what Sonogon tells us about a collapsing argon bubble"** script
   - Peak emission (with breakdown by component)
   - Max electron temperature
@@ -298,7 +312,7 @@ Pre-configured parameter sets for common experimental conditions:
   - Mode squeezing metrics (pumped vs released energy)
 - `printCanonicalAnalysis()` - Human-readable output with detailed atomic/subatomic metrics
 
-### Visualization (`scripts/collapseVisualization.ts`) ⭐ NEW
+### Visualization (`scripts/collapseVisualization.ts`) 
 - `generateCollapseVisualizationData()` - Export CSV for plotting R(t), T(t), ne(t), E_em(t), totalPower(t)
 - `printVisualizationInstructions()` - Python plotting code
 - **"Collapse emits/decays inside a negative space"** visualization
@@ -312,7 +326,7 @@ Pre-configured parameter sets for common experimental conditions:
 - `exportTimeSeriesToJSON()` - Export time series log as JSON
 - `findCollapseCycle()` - Automatically identify collapse cycle windows
 
-### Canonical Scripts (`scripts/`) ⭐ NEW
+### Canonical Scripts (`scripts/`) 
 - `canonicalCollapseAnalysis.ts` - Main script for canonical analysis
   - Runs simulation with all advanced features
   - Performs canonical analysis
@@ -560,6 +574,60 @@ import { exportObservables } from './src/sonoluminescence/io/export';
 exportObservables(result.timeSeries, mapper, 'results.csv');
 ```
 
+### Pistol Shrimp Simulation 
+
+```typescript
+import { DefaultStateVectorMapper } from './src/sonoluminescence/core/statevector';
+import { SonoluminescenceModel } from './src/sonoluminescence/model/sonoluminescenceModel';
+import { createPistolShrimpPreset } from './src/sonoluminescence/config/presets';
+import { createEquilibriumState } from './src/sonoluminescence/analysis/initialStates';
+import { runSimulation } from './src/sonoluminescence/simulation/runner';
+import { computeShockwaveDiagnostics } from './src/sonoluminescence/analysis/diagnostics';
+
+// Create model with pistol shrimp preset
+const mapper = new DefaultStateVectorMapper();
+const params = createPistolShrimpPreset();
+const model = new SonoluminescenceModel(mapper, params);
+
+// Create initial state (2 mm bubble, typical for pistol shrimp)
+const initialState = createEquilibriumState(params, 2e-3);
+// Add initial collapse velocity (from jet)
+initialState.hydro.Rdot = -30; // -30 m/s initial collapse velocity
+
+const x0 = mapper.toVector(initialState);
+
+// Run simulation
+const result = runSimulation({
+  model,
+  initialState,
+  integratorOptions: {
+    adaptive: true,
+    tolerance: 1e-6,
+    dt: 1e-9,
+    tMax: 1e-3, // 1 ms (covers jet duration and collapse)
+  },
+  analysis: {
+    computeEmission: true,
+    computeGradients: true,
+  },
+});
+
+// Analyze shockwave characteristics
+const finalState = result.timeSeries[result.timeSeries.length - 1];
+const shockwave = computeShockwaveDiagnostics(finalState);
+
+console.log(`Sound intensity: ${shockwave.soundIntensityDb.toFixed(1)} dB`);
+console.log(`Shockwave pressure: ${(shockwave.shockwavePressure / 1e6).toFixed(1)} MPa`);
+console.log(`Mach number: ${shockwave.machNumber.toFixed(2)}`);
+console.log(`Comparable to pistol shrimp: ${shockwave.comparableToPistolShrimp}`);
+
+// Pistol shrimp can reach:
+// - 218 dB sound intensity
+// - Supersonic collapse (Mach > 1)
+// - Temperatures up to 8,000°F (4,427°C)
+// - Extreme shockwaves that stun prey
+```
+
 ## Physical Constants
 
 All physical constants are defined in `core/units.ts`:
@@ -581,7 +649,7 @@ The model uses SI base units:
 
 ## Advanced Features
 
-### Atomic/Subatomic Physics Tracking ⭐ NEW
+### Atomic/Subatomic Physics Tracking 
 
 The model now tracks **atomic and subatomic-level disturbances** during extreme bubble collapse conditions, connecting macroscopic sonoluminescence gradients to fundamental particle physics:
 
@@ -605,7 +673,25 @@ The model now tracks **atomic and subatomic-level disturbances** during extreme 
 
 This feature directly connects the extreme gradients in sonoluminescence (high compression rates, MeV temperatures, nuclear densities) to the same physics scales explored at particle accelerators like CERN, where exotic hadrons like tetraquarks are discovered.
 
-### Cavity-QED Formal Subsystem ⭐ NEW
+### Pistol Shrimp Physics 
+
+The model now includes **jet-driven cavitation** inspired by the pistol shrimp (Alpheidae), which creates cavitation bubbles through rapid claw closure:
+
+- **Jet-Driven Cavitation**: High-speed water jet (30-60 m/s) creates low-pressure zone via Bernoulli principle
+- **Extreme Collapse Conditions**: Bubble collapses with supersonic velocity, reaching:
+  - **Temperatures**: Up to 8,000°F (4,427°C) - comparable to sun's surface
+  - **Sound Intensity**: Up to 218 dB (louder than gunshot/jet engine)
+  - **Shockwaves**: Intense pressure waves that stun or kill prey
+- **Shockwave Tracking**: Comprehensive diagnostics including:
+  - Shockwave pressure and sound intensity (dB)
+  - Mach number (supersonic collapse detection)
+  - Shockwave energy and propagation
+  - Comparison to natural pistol shrimp conditions
+- **Pistol Shrimp Preset**: Pre-configured parameters matching natural pistol shrimp conditions
+
+This mechanism provides an alternative to acoustic driving, demonstrating how mechanical energy (water jet) can initiate extreme cavitation events similar to those observed in nature.
+
+### Cavity-QED Formal Subsystem 
 
 The EM cavity module is now a **formal cavity-QED subsystem** with:
 
@@ -648,7 +734,7 @@ See `CAVITY_QED_ENHANCEMENTS.md` for detailed documentation.
 - **`WHITEPAPER.md`**: Detailed scientific background and theoretical foundations
 - **`INTEGRATOR.md`**: Adaptive integrator documentation (Dormand-Prince 5(4))
 - **`EM_NEGATIVE_SPACE_LOGGING.md`**: ⭐ EM negative-space behavior and time series logging guide
-- **`CAVITY_QED_ENHANCEMENTS.md`**: ⭐ NEW - Formal cavity-QED subsystem documentation
+- **`CAVITY_QED_ENHANCEMENTS.md`**:  - Formal cavity-QED subsystem documentation
 - **`DETAILED_ENHANCEMENTS_COMPLETE.md`**: Detailed physics enhancements (13 enhancements)
 - **`KINEMATIC_ENHANCEMENTS_COMPLETE.md`**: Kinematic sciences features (shape, translation)
 - **`ADVANCED_FEATURES_COMPLETE.md`**: Van der Waals iterative and enhanced shape oscillations
@@ -700,6 +786,7 @@ The comprehensive physics validation suite includes:
 - **Formal cavity-QED subsystem** with refractive index effects, dynamic Q, radiation backreaction
 - **Atomic/subatomic physics tracking** - Comprehensive metrics connecting extreme gradients to nuclear, quark-level, and Planck-scale physics
 - **Exotic hadron formation tracking** - Tetraquark, pentaquark, hexaquark, hybrid meson, and glueball probabilities
+- **Pistol shrimp physics** - Jet-driven cavitation with shockwave tracking (218 dB, 8,000°F temperatures)
 - **Canonical analysis script** - "This is what Sonogon tells us about a collapsing argon bubble" with atomic/subatomic disturbance metrics
 - **Visualization tools** - "Collapse emits/decays inside a negative space" plots
 - **Time series logging** for visualization

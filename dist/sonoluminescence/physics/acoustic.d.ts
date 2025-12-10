@@ -21,6 +21,15 @@ export interface AcousticParams {
         y: number;
         z: number;
     };
+    jetDriven?: boolean;
+    jetVelocity?: number;
+    jetDuration?: number;
+    jetNozzleArea?: number;
+    jetDirection?: {
+        x: number;
+        y: number;
+        z: number;
+    };
 }
 export interface AcousticDerivatives {
     dPhaseDt: number;
@@ -31,6 +40,10 @@ export interface AcousticDerivatives {
         z: number;
     };
     laplacian?: number;
+    jetPressure?: number;
+    jetActive?: boolean;
+    shockwavePressure?: number;
+    shockwaveIntensity?: number;
 }
 /**
  * Compute acoustic state with support for:

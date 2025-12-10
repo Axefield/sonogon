@@ -195,6 +195,62 @@ export function createHighIntensityPreset(): SonoluminescenceParams {
 }
 
 /**
+ * Preset: Pistol Shrimp (Alpheidae) 
+ * 
+ * The pistol shrimp creates cavitation bubbles through rapid claw closure,
+ * ejecting a high-speed water jet (30-60 m/s) that forms a cavitation bubble.
+ * The bubble collapses with extreme violence, generating:
+ * - Temperatures up to 8,000°F (4,427°C) - comparable to sun's surface
+ * - Sound intensity up to 218 dB (louder than gunshot/jet engine)
+ * - Sonoluminescence (light flash)
+ * - Shockwaves that stun or kill prey
+ * 
+ * Typical conditions:
+ * - Initial bubble radius: 1-5 mm
+ * - Jet velocity: 30-60 m/s
+ * - Jet duration: ~0.1-1 ms
+ * - Collapse velocity: can exceed sound speed (supersonic)
+ */
+export function createPistolShrimpPreset(): SonoluminescenceParams {
+  return {
+    hydro: {
+      ...water20C,
+      P0: 101325, // 1 atm (underwater)
+      useKellerMiksis: true, // Use Keller-Miksis for supersonic collapse
+    },
+    thermo: {
+      gamma: 1.4, // Air-like (bubble contains air/water vapor)
+      R0: 2e-3, // 2 mm initial bubble (typical for pistol shrimp)
+      Pg0: 101325, // 1 atm
+      T0: 293.15, // 20°C (ambient water temperature)
+      heatLossCoeff: 1000, // Very high heat loss (water is good conductor)
+    },
+    plasma: {
+      ...defaultPlasma,
+      // Pistol shrimp conditions can reach extreme temperatures
+      // Ionization will occur during collapse
+    },
+    em: {
+      ...defaultEmCavity,
+      pumpCoefficient: 1e-14, // Strong parametric pumping from rapid collapse
+      decayTime: 1e-9, // 1 ns decay (fast emission)
+    },
+    acoustic: {
+      // Jet-driven cavitation (pistol shrimp mechanism)
+      jetDriven: true,
+      jetVelocity: 45, // 45 m/s (typical pistol shrimp jet velocity)
+      jetDuration: 5e-4, // 0.5 ms jet duration
+      jetNozzleArea: 1e-6, // ~1 mm² effective nozzle area
+      jetDirection: { x: 1, y: 0, z: 0 }, // Jet direction (normalized)
+      // Also include some acoustic driving (optional, can be zero)
+      Pa: 0, // No additional acoustic driving (pure jet-driven)
+      omega: 0,
+    },
+    reactions: defaultReactions,
+  };
+}
+
+/**
  * Validate parameter set for physical reasonableness
  */
 export function validateParams(params: SonoluminescenceParams): {

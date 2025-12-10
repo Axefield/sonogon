@@ -179,4 +179,27 @@ export declare function computeModeSqueezingMetrics(state: BubbleFullState, stat
     releasedEnergy: number;
     netEnergyChange: number;
 };
+/**
+ * Compute shockwave diagnostics (pistol shrimp mechanism) ⭐ NEW
+ *
+ * The pistol shrimp creates cavitation bubbles that collapse with extreme violence,
+ * generating shockwaves up to 218 dB and temperatures comparable to the sun's surface.
+ *
+ * This function computes:
+ * - Shockwave pressure from rapid bubble collapse
+ * - Sound intensity in decibels
+ * - Shockwave propagation characteristics
+ * - Comparison to pistol shrimp conditions
+ */
+export declare function computeShockwaveDiagnostics(state: BubbleFullState, statePrev?: BubbleFullState, dt?: number, rho_water?: number, // Water density [kg/m³]
+c_water?: number): {
+    shockwavePressure: number;
+    soundIntensity: number;
+    soundIntensityDb: number;
+    machNumber: number;
+    shockwaveEnergy: number;
+    comparableToPistolShrimp: boolean;
+    shockwaveRadius: number;
+    shockwaveVelocity: number;
+};
 //# sourceMappingURL=diagnostics.d.ts.map

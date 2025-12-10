@@ -995,3 +995,94 @@ export function computeModeSqueezingMetrics(
   };
 }
 
+/**
+ * Compute shockwave diagnostics (pistol shrimp mechanism) 
+ * 
+ * The pistol shrimp creates cavitation bubbles that collapse with extreme violence,
+ * generating shockwaves up to 218 dB and temperatures comparable to the sun's surface.
+ * 
+ * This function computes:
+ * - Shockwave pressure from rapid bubble collapse
+ * - Sound intensity in decibels
+ * - Shockwave propagation characteristics
+ * - Comparison to pistol shrimp conditions
+ */
+export function computeShockwaveDiagnostics(
+  state: BubbleFullState,
+  statePrev?: BubbleFullState,
+  dt?: number,
+  rho_water: number = 998.2, // Water density [kg/m³]
+  c_water: number = 1482 // Speed of sound in water [m/s]
+): {
+  shockwavePressure: number; // Peak shockwave pressure [Pa]
+  soundIntensity: number; // Sound intensity [W/m²]
+  soundIntensityDb: number; // Sound intensity in decibels (reference: 1e-12 W/m²)
+  machNumber: number; // Collapse Mach number (Rdot / c)
+  shockwaveEnergy: number; // Energy in shockwave [J]
+  comparableToPistolShrimp: boolean; // Reaches pistol shrimp conditions (~218 dB)?
+  shockwaveRadius: number; // Effective shockwave radius [m]
+  shockwaveVelocity: number; // Shockwave propagation velocity [m/s]
+} {
+  const { R, Rdot } = state.hydro;
+  const { Pg } = state.gas;
+  
+  // Collapse velocity (negative Rdot means collapse)
+  const collapseVelocity = Math.abs(Rdot);
+  
+  // Mach number: ratio of collapse velocity to sound speed
+  const machNumber = collapseVelocity / c_water;
+  
+  // Shockwave pressure from rapid collapse
+  // For supersonic collapse, the shockwave pressure is approximately:
+  // P_shock ≈ ρ * c * |Rdot| * (1 + M) for M > 1
+  // For subsonic: P_shock ≈ ρ * c * |Rdot|
+  let shockwavePressure = 0;
+  if (machNumber > 1) {
+    // Supersonic collapse: stronger shockwave
+    shockwavePressure = rho_water * c_water * collapseVelocity * (1 + machNumber);
+  } else {
+    // Subsonic collapse: weaker pressure wave
+    shockwavePressure = rho_water * c_water * collapseVelocity;
+  }
+  
+  // Additional contribution from gas pressure release
+  // When bubble collapses, high internal pressure is released
+  const pressureRelease = Pg > 1e6 ? Pg * 0.1 : 0; // 10% of high pressure contributes
+  shockwavePressure += pressureRelease;
+  
+  // Sound intensity: I = P² / (ρ * c)
+  // Reference intensity: I₀ = 1e-12 W/m² (threshold of hearing)
+  const soundIntensity = (shockwavePressure * shockwavePressure) / (rho_water * c_water);
+  const I0 = 1e-12; // Reference intensity [W/m²]
+  const soundIntensityDb = 10 * Math.log10(soundIntensity / I0);
+  
+  // Shockwave energy: E ≈ (4π/3) * R³ * P_shock
+  // This is a rough estimate of the energy in the shockwave
+  const volume = (4.0 / 3.0) * Math.PI * R * R * R;
+  const shockwaveEnergy = volume * shockwavePressure;
+  
+  // Shockwave propagation
+  // Shockwave radius grows at approximately sound speed
+  const shockwaveRadius = R; // Initial radius is bubble radius
+  const shockwaveVelocity = c_water; // Propagates at sound speed (approximately)
+  
+  // Pistol shrimp comparison
+  // Pistol shrimp can reach ~218 dB (soundIntensityDb ≈ 218)
+  // Typical conditions: Rdot ~ 30-60 m/s, R ~ 1-5 mm
+  const comparableToPistolShrimp = 
+    soundIntensityDb > 200 && // Above 200 dB
+    collapseVelocity > 20 && // High collapse velocity
+    R < 5e-3; // Small bubble (few mm)
+  
+  return {
+    shockwavePressure,
+    soundIntensity,
+    soundIntensityDb,
+    machNumber,
+    shockwaveEnergy,
+    comparableToPistolShrimp,
+    shockwaveRadius,
+    shockwaveVelocity,
+  };
+}
+

@@ -22,6 +22,13 @@ export interface AcousticParams {
   waveVector?: { x: number; y: number; z: number }; // Wave vector k [1/m]
   standingWave?: boolean; // Standing wave pattern
   nodePosition?: { x: number; y: number; z: number }; // Node position for standing wave
+  
+  // Jet-driven cavitation (pistol shrimp mechanism) 
+  jetDriven?: boolean; // Enable jet-driven cavitation
+  jetVelocity?: number; // Water jet velocity [m/s] (typical: 30-60 m/s for pistol shrimp)
+  jetDuration?: number; // Jet duration [s] (typical: ~0.1-1 ms)
+  jetNozzleArea?: number; // Effective nozzle area [m²] (typical: ~1 mm²)
+  jetDirection?: { x: number; y: number; z: number }; // Jet direction vector (normalized)
 }
 
 export interface AcousticDerivatives {
@@ -29,6 +36,11 @@ export interface AcousticDerivatives {
   Pacoustic: number; // value of acoustic pressure at this instant
   gradient?: { x: number; y: number; z: number }; // ∇P_acoustic [Pa/m]
   laplacian?: number; // ∇²P_acoustic [Pa/m²]
+  // Jet-driven cavitation 
+  jetPressure?: number; // Pressure from water jet [Pa]
+  jetActive?: boolean; // Whether jet is currently active
+  shockwavePressure?: number; // Shockwave pressure from bubble collapse [Pa]
+  shockwaveIntensity?: number; // Sound intensity in dB (reference: 1e-12 W/m²)
 }
 
 /**
@@ -54,7 +66,32 @@ export function computeAcousticState(
   
   // Compute acoustic pressure
   let Pacoustic = 0;
+  let jetPressure = 0;
+  let jetActive = false;
+  let shockwavePressure = 0;
+  let shockwaveIntensity = 0;
   
+  // Jet-driven cavitation (pistol shrimp mechanism) 
+  if (params.jetDriven && params.jetVelocity !== undefined) {
+    const jetDuration = params.jetDuration || 1e-4; // Default 0.1 ms
+    const rho_water = 998.2; // kg/m³ (water density)
+    
+    // Jet is active during the jet duration
+    jetActive = t < jetDuration;
+    
+    if (jetActive) {
+      // Bernoulli principle: P_jet = (1/2) * ρ * v²
+      // This creates a low-pressure zone that initiates cavitation
+      // The pressure difference drives bubble formation
+      const v_jet = params.jetVelocity;
+      jetPressure = -0.5 * rho_water * v_jet * v_jet; // Negative = low pressure (cavitation)
+      
+      // Add to acoustic pressure (negative pressure creates cavitation)
+      Pacoustic += jetPressure;
+    }
+  }
+  
+  // Standard acoustic driving (if not jet-driven or in addition to jet)
   if (params.frequencies && params.frequencies.length > 0) {
     // Multi-frequency mode
     for (const freq of params.frequencies) {
@@ -181,5 +218,20 @@ export function computeAcousticState(
     }
   }
   
-  return { dPhaseDt, Pacoustic, gradient, laplacian };
+  // Shockwave from bubble collapse (pistol shrimp) 
+  // The shockwave is generated when the bubble collapses rapidly
+  // Intensity can reach 218 dB for pistol shrimp
+  // We compute this based on bubble collapse rate (if available from state)
+  // For now, we'll compute it in the diagnostics module where we have access to bubble state
+  
+  return { 
+    dPhaseDt, 
+    Pacoustic, 
+    gradient, 
+    laplacian,
+    jetPressure: params.jetDriven ? jetPressure : undefined,
+    jetActive: params.jetDriven ? jetActive : undefined,
+    shockwavePressure: params.jetDriven ? shockwavePressure : undefined,
+    shockwaveIntensity: params.jetDriven ? shockwaveIntensity : undefined,
+  };
 }
