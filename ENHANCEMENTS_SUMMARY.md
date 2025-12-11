@@ -2,7 +2,7 @@
 
 ## Completed Enhancements
 
-### 1. Geometry & Hydrodynamics (R, Rdot) ✅
+### 1. Geometry & Hydrodynamics (R, Rdot) 
 **Enhanced**: Added Keller-Miksis equation option
 - **Location**: `physics/hydro.ts`
 - **Features**:
@@ -11,7 +11,7 @@
   - Backward compatible (Rayleigh-Plesset still default)
 - **Usage**: Set `useKellerMiksis: true` in `HydroParams`
 
-### 2. Acoustic Phase (φ) ✅
+### 2. Acoustic Phase (φ) 
 **Enhanced**: Multi-frequency and non-sinusoidal driving
 - **Location**: `physics/acoustic.ts`
 - **Features**:
@@ -20,7 +20,7 @@
   - Backward compatible with single-frequency mode
 - **Usage**: Use `frequencies` array or `waveform` option in `AcousticParams`
 
-### 3. Species Number Densities ✅
+### 3. Species Number Densities 
 **Enhanced**: Added OH and N species, expanded reactions
 - **Location**: `model/types.ts`, `physics/reactions.ts`
 - **New Species**: OH (hydroxyl), N (atomic nitrogen)
@@ -31,14 +31,14 @@
   - Reaction 5: H + OH → H2O (three-body recombination)
 - **State Dimensions**: Now 31 (was 29)
 
-### 4. Reaction Progress Variables (ξ) ✅
+### 4. Reaction Progress Variables (ξ) 
 **Enhanced**: Expanded reaction network
 - **Location**: `physics/reactions.ts`
 - **Reactions**: 6 total (was 3)
 - **Features**: More realistic chemistry with intermediate species
 
-### 5. Export Utilities ✅
-**New**: Data export capabilities
+### 5. Export Utilities 
+**update**: Data export capabilities
 - **Location**: `io/export.ts`
 - **Features**:
   - CSV export (all variables or selected)

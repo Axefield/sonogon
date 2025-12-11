@@ -1,8 +1,8 @@
 # Detailed Physics Enhancements - Implementation Summary
 
-## ✅ Completed Enhancements
+##  Completed Enhancements
 
-### 1. Hydrodynamics - Gamma Fix ✅
+### 1. Hydrodynamics - Gamma Fix 
 **File**: `src/sonoluminescence/physics/hydro.ts`
 
 - **Issue**: Keller-Miksis equation used hardcoded `gamma = 1.4`
@@ -10,7 +10,7 @@
 - **Implementation**: Added optional `gamma` parameter to `computeHydroDerivatives()`
 - **Usage**: Model passes `gamma` from `params.thermo.gamma` to hydro module
 
-### 2. Thermodynamics - Detailed Heat Transfer ✅
+### 2. Thermodynamics - Detailed Heat Transfer 
 **File**: `src/sonoluminescence/physics/thermoChem.ts`
 
 - **Enhancement**: Replaced simplified heat loss with detailed model
@@ -21,7 +21,7 @@
   - Radiation (Stefan-Boltzmann law)
 - **Parameters**: `useDetailedHeatTransfer`, `thermalConductivity`, `liquidThermalConductivity`, `convectiveCoeff`, `includeRadiation`
 
-### 3. Thermodynamics - Detailed Heat Capacity ✅
+### 3. Thermodynamics - Detailed Heat Capacity 
 **File**: `src/sonoluminescence/physics/thermoChem.ts`
 
 - **Enhancement**: Temperature-dependent heat capacity for each species
@@ -38,7 +38,7 @@
   - Monatomic (Ar, Xe, H, O, N): No vibration
 - **Parameter**: `useDetailedHeatCapacity`
 
-### 4. Plasma Physics - Detailed Ionization Rates ✅
+### 4. Plasma Physics - Detailed Ionization Rates 
 **File**: `src/sonoluminescence/physics/plasma.ts`
 
 - **Enhancement**: Replaced simple relaxation with proper rate equations
@@ -48,7 +48,7 @@
   - Proper collision-based rate coefficients
 - **Parameter**: `useDetailedCollisions`
 
-### 5. Plasma Physics - Detailed Recombination ✅
+### 5. Plasma Physics - Detailed Recombination 
 **File**: `src/sonoluminescence/physics/plasma.ts`
 
 - **Enhancement**: Multiple recombination channels
@@ -58,7 +58,7 @@
   - **Dielectronic**: `e + A⁺ → A**` (α_diel ~ T_e^-1.5)
 - **Replaces**: Simple `n_e²` model
 
-### 6. Plasma Physics - Collision Cross Sections ✅
+### 6. Plasma Physics - Collision Cross Sections 
 **File**: `src/sonoluminescence/physics/plasma.ts`
 
 - **Enhancement**: Temperature-dependent collision cross sections
@@ -68,7 +68,7 @@
   - Temperature-dependent collision frequency
 - **Parameters**: `useTemperatureDependentCrossSections`, `ionizationCrossSectionRef`
 
-### 7. EM Cavity - Cross-Mode Coupling ✅
+### 7. EM Cavity - Cross-Mode Coupling 
 **File**: `src/sonoluminescence/physics/emCavity.ts`
 
 - **Enhancement**: Modes can interact and transfer energy
@@ -78,7 +78,7 @@
   - Symmetric coupling matrix
 - **Parameters**: `useModeCoupling`, `modeCouplingMatrix`
 
-### 8. EM Cavity - Frequency-Dependent Q Factor ✅
+### 8. EM Cavity - Frequency-Dependent Q Factor 
 **File**: `src/sonoluminescence/physics/emCavity.ts`
 
 - **Enhancement**: Quality factor depends on frequency
@@ -88,7 +88,7 @@
   - Damping: `γ = ω / (2*Q(ω))`
 - **Parameters**: `useFrequencyDependentQ`, `Q0`, `QFrequencyDependence`
 
-### 9. Reactions - Pressure-Dependent Rates ✅
+### 9. Reactions - Pressure-Dependent Rates 
 **File**: `src/sonoluminescence/physics/reactions.ts`
 
 - **Enhancement**: Lindemann falloff mechanism
@@ -98,7 +98,7 @@
   - Troe broadening factor
 - **Parameters**: `usePressureDependentRates`, `reaction0_k0`, `reaction0_kInf`, `reaction0_Fc`
 
-### 10. Energy Exchange - Landau-Teller Relaxation ✅
+### 10. Energy Exchange - Landau-Teller Relaxation 
 **File**: `src/sonoluminescence/physics/thermoChem.ts`
 
 - **Enhancement**: Accurate vibrational relaxation model
@@ -108,7 +108,7 @@
   - Characteristic vibrational temperature: `T_vib = 3000 K`
 - **Parameter**: `useLandauTellerRelaxation`
 
-## 📊 Summary Statistics
+##  Summary Statistics
 
 - **Total Enhancements**: 10
 - **Files Modified**: 4
@@ -118,7 +118,7 @@
   - `emCavity.ts`: 2 enhancements
   - `reactions.ts`: 1 enhancement
 
-## 🔄 Remaining Tasks
+##  Remaining Tasks
 
 1. **Shape Oscillations**: Add P2, P4 spherical harmonic modes
 2. **Van der Waals Iterative**: Proper iterative EOS solution
@@ -126,7 +126,7 @@
 4. **Three-Body Collisions**: Detailed collision partner selection
 5. **Species Diffusion**: Transport through bubble wall
 
-## 🎯 Usage Example
+##  Usage Example
 
 ```typescript
 const params = createArgonBubblePreset();
@@ -162,7 +162,7 @@ params.reactions.reaction0_kInf = 1e6;
 params.reactions.reaction0_Fc = 0.6;
 ```
 
-## ✅ Build Status
+##  Build Status
 
 All code compiles successfully with no errors. The model now includes significantly more detailed physics while maintaining backward compatibility.
 

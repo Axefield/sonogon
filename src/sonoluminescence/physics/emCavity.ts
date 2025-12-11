@@ -447,9 +447,25 @@ export function computeEmDerivatives(
         const B0 = params.staticMagneticField; // Static magnetic field [T]
         const L = 2 * R; // Path length through bubble (diameter) [m]
         
-        // Verdet constant (material-dependent, typical ~10 rad/(T·m) for TGG)
-        // For gas/plasma, use approximate value
-        const Verdet = params.magneticFieldCoupling || 1.0; // rad/(T·m)
+        // Verdet constant (material-dependent)
+        // TGG (Terbium-Gallium-Garnet) was used in the research
+        // For bubble interior (gas/plasma), use gas Verdet constant
+        // For TGG-like materials, use TGG Verdet constant
+        const omega_k = computeModeFrequency(
+          params.modeFrequencies0[k] || 2 * Math.PI * 3e14,
+          R,
+          R0,
+          omega_p,
+          n_effective,
+          params.modeFrequencies0[k]
+        );
+        const wavelength = (2 * Math.PI * Constants.c) / omega_k; // Wavelength [m]
+        
+        // Use TGG Verdet constant if specified, otherwise use gas/plasma value
+        const useTGG = params.magneticFieldCoupling !== undefined && params.magneticFieldCoupling > 10;
+        const Verdet = useTGG
+          ? Calculations.verdetConstantTGG(wavelength)
+          : Calculations.verdetConstantGas(wavelength, ne);
         
         // Faraday rotation angle: θ = V * B₀ * L
         const rotationAngle = Verdet * B0 * L;

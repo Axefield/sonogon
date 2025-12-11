@@ -248,12 +248,12 @@ Plasma processes add energy to EM modes:
 
 ## Summary
 
-✅ **EM mode frequency shifting**: ω_k(R(t), n(r,t)) implemented
-✅ **Mode squeezing equations**: ȧk = f(ak, R, Ṙ, ∂n/∂t) implemented
-✅ **Stored-energy pump from gradients**: Explicit gradient-based pumping
-✅ **Dynamic Q-factor & cavity losses**: Q(R, n, ω) implemented
-✅ **Radiation backreaction term**: F = -E_em/R implemented
-✅ **Bremsstrahlung + recombination emission**: Added to stored energy
+ **EM mode frequency shifting**: ω_k(R(t), n(r,t)) implemented
+ **Mode squeezing equations**: ȧk = f(ak, R, Ṙ, ∂n/∂t) implemented
+ **Stored-energy pump from gradients**: Explicit gradient-based pumping
+ **Dynamic Q-factor & cavity losses**: Q(R, n, ω) implemented
+ **Radiation backreaction term**: F = -E_em/R implemented
+ **Bremsstrahlung + recombination emission**: Added to stored energy
 
 The EM model is now a **formal cavity-QED subsystem** with comprehensive physics!
 

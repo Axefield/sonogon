@@ -231,15 +231,15 @@ export function benchmarkAgainstExperiment(): ComparisonResult;
 ## Implementation Priority
 
 ### Phase 1 (Immediate)
-1. ✅ Spectral emission calculation
-2. ✅ Chemical energy calculation
-3. ✅ EM mode frequency computation
-4. ✅ Initial state helpers
+1.  Spectral emission calculation
+2.  Chemical energy calculation
+3.  EM mode frequency computation
+4.  Initial state helpers
 
 ### Phase 2 (Short-term)
-5. ✅ Simulation runner API
-6. ✅ Export utilities
-7. ✅ Validation tests
+5.  Simulation runner API
+6.  Export utilities
+7.  Validation tests
 
 ### Phase 3 (Medium-term)
 8. Expanded reaction set

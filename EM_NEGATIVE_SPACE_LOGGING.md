@@ -203,17 +203,17 @@ This plot will show:
 
 ## Summary
 
-✅ **EM negative-space behavior is now explicit**:
+ **EM negative-space behavior is now explicit**:
 - Documented in code comments
 - Implemented via parametric Hamiltonian
 - Creates squeezed vacuum state during compression
 
-✅ **Time series logging enabled**:
+ **Time series logging enabled**:
 - Logs R(t), Pg(t), T(t), ne(t), Te(t), E_em(t), totalPower(t)
 - Export to CSV or JSON
 - Find collapse cycles automatically
 
-✅ **Visualization ready**:
+ **Visualization ready**:
 - Plot E_em(t) and totalPower(t) to see the negative-space decay
 - The spike in totalPower when E_em decays is the "light from negative cavity state"
 

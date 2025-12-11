@@ -1,12 +1,12 @@
 # Advanced Features Implementation - Complete
 
-## ✅ Completed Enhancements
+##  Completed Enhancements
 
-### 1. Van der Waals Iterative Solution ✅
+### 1. Van der Waals Iterative Solution 
 **File**: `src/sonoluminescence/physics/thermoChem.ts`
 
 - **Previous**: Simplified approximation using ideal gas relation + correction term
-- **New**: Proper iterative solution using Newton-Raphson method
+- **update**: Proper iterative solution using Newton-Raphson method
 - **Implementation**:
   - `solveVanDerWaalsVolume()`: Iterative solution for volume given P, T, n
   - `computeVanDerWaalsDerivative()`: Proper partial derivatives
@@ -20,11 +20,11 @@
   - Fallback to ideal gas for edge cases
 - **Parameters**: `useIterativeVanDerWaals`, `vdwIterationTolerance`, `vdwMaxIterations`
 
-### 2. Enhanced Shape Oscillations ✅
+### 2. Enhanced Shape Oscillations 
 **File**: `src/sonoluminescence/physics/shapeOscillations.ts`
 
 - **Previous**: Basic damped harmonic oscillator
-- **New**: Advanced features with nonlinear coupling and mode interactions
+- **update**: Advanced features with nonlinear coupling and mode interactions
 
 #### Advanced Features Added:
 
@@ -65,7 +65,7 @@
 - `couplingCoefficient4`: Mode 4 coupling strength
 - `nonlinearCoefficient`: Nonlinear coupling strength
 
-## 📊 Implementation Details
+##  Implementation Details
 
 ### Van der Waals Iterative Solution
 
@@ -98,7 +98,7 @@ dP/dt = (∂P/∂V) * (dV/dt) + (∂P/∂T) * (dT/dt)
 - Amplitude-dependent: `ω_eff = ω_n * (1 + α * (a²/R²))`
 - Mode interaction corrections
 
-## 🎯 Usage Examples
+##  Usage Examples
 
 ### Van der Waals Iterative Solution
 
@@ -150,11 +150,11 @@ const R_eff = computeEffectiveRadius(R, initialState.shape, true);
 console.log(`Effective radius: ${R_eff} m`);
 ```
 
-## ✅ Build Status
+##  Build Status
 
 All code compiles successfully with no errors. Both features are production-ready.
 
-## 📝 Benefits
+##  Benefits
 
 ### Van der Waals Iterative Solution
 - **Accuracy**: Proper thermodynamic consistency
@@ -167,7 +167,7 @@ All code compiles successfully with no errors. Both features are production-read
 - **Stability**: Better modeling of shape instabilities
 - **Energy Tracking**: Can monitor shape oscillation energy
 
-## 🔄 Next Steps
+##  Next Steps
 
 1. Integrate into main model RHS function
 2. Update state vector mapper

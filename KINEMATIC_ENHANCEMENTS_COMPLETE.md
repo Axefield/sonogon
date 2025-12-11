@@ -1,8 +1,8 @@
 # Kinematic Sciences Enhancements - Complete
 
-## ✅ Implemented Enhancements
+##  Implemented Enhancements
 
-### 1. Shape Oscillations ✅
+### 1. Shape Oscillations 
 **File**: `src/sonoluminescence/physics/shapeOscillations.ts`
 
 - **Implementation**: Spherical harmonic modes for non-spherical bubbles
@@ -16,7 +16,7 @@
   - Effective radius computation accounting for shape deformations
 - **State Variables**: 4 new dimensions (a₂, a₂_dot, a₄, a₄_dot)
 
-### 2. Bubble Translation ✅
+### 2. Bubble Translation 
 **File**: `src/sonoluminescence/physics/bubbleTranslation.ts`
 
 - **Implementation**: 3D position and velocity dynamics
@@ -29,7 +29,7 @@
     - Custom drag coefficient support
 - **State Variables**: 6 new dimensions (x, y, z, vx, vy, vz)
 
-### 3. Acoustic Field Gradients ✅
+### 3. Acoustic Field Gradients 
 **File**: `src/sonoluminescence/physics/acoustic.ts`
 
 - **Implementation**: Spatial pressure gradients and Laplacian
@@ -40,7 +40,7 @@
   - Wave vector specification
 - **Usage**: Enables Bjerknes force computation
 
-### 4. Bjerknes Forces ✅
+### 4. Bjerknes Forces 
 **File**: `src/sonoluminescence/physics/bubbleTranslation.ts`
 
 - **Primary Bjerknes Force**:
@@ -51,10 +51,10 @@
   - Bubble-bubble interaction
 - **Implementation**: Integrated into translation dynamics
 
-## 📊 State Vector Expansion
+##  State Vector Expansion
 
 **Previous**: 31 dimensions
-**New**: 41 dimensions (+10)
+**update**: 41 dimensions (+10)
 
 ### New Dimensions:
 1. ShapeMode2_Amplitude (a₂)
@@ -68,7 +68,7 @@
 9. BubbleVelocity_Y
 10. BubbleVelocity_Z
 
-## 🎯 Usage Example
+##  Usage Example
 
 ```typescript
 import { createArgonBubblePreset } from './config/presets';
@@ -121,15 +121,15 @@ const model = new SonoluminescenceModel(mapper, params);
 
 ## 🔧 Integration Status
 
-- ✅ Types defined (`types.ts`)
-- ✅ State vector layout updated (`statevector.ts`)
-- ✅ Shape oscillation physics (`shapeOscillations.ts`)
-- ✅ Translation physics (`bubbleTranslation.ts`)
-- ✅ Acoustic gradients (`acoustic.ts`)
+-  Types defined (`types.ts`)
+-  State vector layout updated (`statevector.ts`)
+-  Shape oscillation physics (`shapeOscillations.ts`)
+-  Translation physics (`bubbleTranslation.ts`)
+-  Acoustic gradients (`acoustic.ts`)
 - ⏳ Model integration (RHS function) - Next step
 - ⏳ State vector mapper updates - Next step
 
-## 📝 Next Steps
+##  Next Steps
 
 1. Update `DefaultStateVectorMapper` to handle new dimensions
 2. Integrate shape and translation derivatives into `SonoluminescenceModel.rhs()`
@@ -137,7 +137,7 @@ const model = new SonoluminescenceModel(mapper, params);
 4. Add coupling between shape oscillations and radial dynamics
 5. Test with example simulations
 
-## ✅ Build Status
+##  Build Status
 
 All new code compiles successfully. Ready for integration into main model.
 

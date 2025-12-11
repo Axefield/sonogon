@@ -20,6 +20,10 @@ export declare const Constants: {
     readonly nuclearMatterDensity: 230000000000000000;
     readonly nuclearRadiusConstant: 1.2e-15;
     readonly fermiMomentumNuclear: 1.36e-19;
+    readonly verdet_TGG_633nm: 134;
+    readonly verdet_TGG_532nm: 50;
+    readonly verdet_TGG_1064nm: 40;
+    readonly verdet_TGG_1550nm: 8;
 };
 /**
  * Common physical properties (SI units)
@@ -129,5 +133,34 @@ export declare const Calculations: {
      * Bremsstrahlung power density (simplified): P ~ ne² * sqrt(Te)
      */
     bremsstrahlungPowerDensity(ne: number, Te: number): number;
+    /**
+     * Verdet constant for Terbium-Gallium-Garnet (TGG) as function of wavelength
+     *
+     * TGG was used in the Hebrew University research on magnetic field effects in light.
+     * Verdet constant determines Faraday rotation: θ = V(λ) * B₀ * L
+     *
+     * @param wavelength Wavelength in meters [m]
+     * @returns Verdet constant in rad/(T·m)
+     *
+     * Reference values (from Northrop Grumman and literature):
+     * - 532 nm (green): ~50 rad/(T·m)
+     * - 633 nm (red): ~134 rad/(T·m) (negative sign indicates direction)
+     * - 1064 nm (near-IR): ~40 rad/(T·m)
+     * - 1550 nm (IR): ~8 rad/(T·m)
+     *
+     * For other wavelengths, uses approximate scaling: V(λ) ~ 1/λ² (dispersive)
+     */
+    verdetConstantTGG(wavelength: number): number;
+    /**
+     * Verdet constant for gas/plasma (much smaller than TGG)
+     *
+     * For gases, Verdet constant is typically ~0.01-0.1 rad/(T·m)
+     * For plasma, depends on electron density and temperature
+     *
+     * @param wavelength Wavelength in meters [m]
+     * @param electronDensity Electron density [1/m³] (for plasma)
+     * @returns Verdet constant in rad/(T·m)
+     */
+    verdetConstantGas(wavelength: number, electronDensity?: number): number;
 };
 //# sourceMappingURL=units.d.ts.map

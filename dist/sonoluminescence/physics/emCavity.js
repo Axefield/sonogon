@@ -263,7 +263,7 @@ dt // Time step for computing time derivatives
         const dIm = -omega_k * a_re + pumpIm - damping * a_im + couplingIm;
         return { dRe, dIm };
     });
-    // Magnetic field effects (based on recent research) ⭐ NEW
+    // Magnetic field effects (based on recent research) 
     // Research shows light's magnetic field directly influences matter
     // Magnetic component contributes ~17% in visible, up to 70% in infrared
     // Reference: https://www.sciencedaily.com/releases/2025/11/251120091945.htm
@@ -299,9 +299,17 @@ dt // Time step for computing time derivatives
             if (params.useFaradayRotation && params.staticMagneticField !== undefined) {
                 const B0 = params.staticMagneticField; // Static magnetic field [T]
                 const L = 2 * R; // Path length through bubble (diameter) [m]
-                // Verdet constant (material-dependent, typical ~10 rad/(T·m) for TGG)
-                // For gas/plasma, use approximate value
-                const Verdet = params.magneticFieldCoupling || 1.0; // rad/(T·m)
+                // Verdet constant (material-dependent)
+                // TGG (Terbium-Gallium-Garnet) was used in the research
+                // For bubble interior (gas/plasma), use gas Verdet constant
+                // For TGG-like materials, use TGG Verdet constant
+                const omega_k = computeModeFrequency(params.modeFrequencies0[k] || 2 * Math.PI * 3e14, R, R0, omega_p, n_effective, params.modeFrequencies0[k]);
+                const wavelength = (2 * Math.PI * units_1.Constants.c) / omega_k; // Wavelength [m]
+                // Use TGG Verdet constant if specified, otherwise use gas/plasma value
+                const useTGG = params.magneticFieldCoupling !== undefined && params.magneticFieldCoupling > 10;
+                const Verdet = useTGG
+                    ? units_1.Calculations.verdetConstantTGG(wavelength)
+                    : units_1.Calculations.verdetConstantGas(wavelength, ne);
                 // Faraday rotation angle: θ = V * B₀ * L
                 const rotationAngle = Verdet * B0 * L;
                 faradayRotationAngle.push(rotationAngle);
@@ -390,7 +398,7 @@ dt // Time step for computing time derivatives
         const dt_safe = dt || 1e-12;
         recombinationEmission = recombinationPower * dt_safe;
     }
-    // Add magnetic energy contribution to stored energy ⭐ NEW
+    // Add magnetic energy contribution to stored energy 
     // Research shows magnetic field directly influences matter and contributes to energy
     // Magnetic contribution: ~17% in visible, up to 70% in infrared
     if (params.useMagneticFieldEffects && magneticEnergy > 0) {

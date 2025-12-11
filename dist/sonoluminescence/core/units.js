@@ -43,6 +43,15 @@ exports.Constants = {
     nuclearRadiusConstant: 1.2e-15, // m (r = r0 * A^(1/3), r0 ≈ 1.2 fm)
     // Fermi momentum (nuclear matter)
     fermiMomentumNuclear: 1.36e-19, // kg·m/s (p_F ≈ 250 MeV/c)
+    // Verdet constant for Terbium-Gallium-Garnet (TGG) - used in Faraday Effect research
+    // Reference: Research from Hebrew University (2025) used TGG crystal
+    // Reference: Northrop Grumman data shows ~134 rad/(T·m) at 633 nm
+    // Verdet constant is wavelength-dependent: V(λ) [rad/(T·m)]
+    // Note: TGG has negative Verdet constant (rotation direction), we use absolute values
+    verdet_TGG_633nm: 134.0, // rad/(T·m) at 633 nm (visible, red) - from Northrop Grumman
+    verdet_TGG_532nm: 50.0, // rad/(T·m) at 532 nm (visible, green) - approximate
+    verdet_TGG_1064nm: 40.0, // rad/(T·m) at 1064 nm (near-IR) - from Northrop Grumman
+    verdet_TGG_1550nm: 8.0, // rad/(T·m) at 1550 nm (IR) - approximate
 };
 /**
  * Common physical properties (SI units)
@@ -198,6 +207,73 @@ exports.Calculations = {
         // More accurate: P ~ ne² * sqrt(Te) * Z² * g_ff
         const prefactor = 1e-40; // W·m³/(K^0.5) - approximate
         return prefactor * ne * ne * Math.sqrt(Te);
+    },
+    /**
+     * Verdet constant for Terbium-Gallium-Garnet (TGG) as function of wavelength
+     *
+     * TGG was used in the Hebrew University research on magnetic field effects in light.
+     * Verdet constant determines Faraday rotation: θ = V(λ) * B₀ * L
+     *
+     * @param wavelength Wavelength in meters [m]
+     * @returns Verdet constant in rad/(T·m)
+     *
+     * Reference values (from Northrop Grumman and literature):
+     * - 532 nm (green): ~50 rad/(T·m)
+     * - 633 nm (red): ~134 rad/(T·m) (negative sign indicates direction)
+     * - 1064 nm (near-IR): ~40 rad/(T·m)
+     * - 1550 nm (IR): ~8 rad/(T·m)
+     *
+     * For other wavelengths, uses approximate scaling: V(λ) ~ 1/λ² (dispersive)
+     */
+    verdetConstantTGG(wavelength) {
+        const lambda_nm = wavelength * 1e9; // Convert to nanometers
+        // Known values at specific wavelengths (using absolute values, sign handled in rotation)
+        if (Math.abs(lambda_nm - 532) < 10) {
+            return exports.Constants.verdet_TGG_532nm;
+        }
+        else if (Math.abs(lambda_nm - 633) < 10) {
+            return exports.Constants.verdet_TGG_633nm;
+        }
+        else if (Math.abs(lambda_nm - 1064) < 50) {
+            return exports.Constants.verdet_TGG_1064nm;
+        }
+        else if (Math.abs(lambda_nm - 1550) < 50) {
+            return exports.Constants.verdet_TGG_1550nm;
+        }
+        // For other wavelengths, use dispersive scaling: V(λ) ~ 1/λ²
+        // Use 633 nm as reference (most common measurement wavelength)
+        const lambda_ref_nm = 633;
+        const V_ref = exports.Constants.verdet_TGG_633nm;
+        const scaling = Math.pow(lambda_ref_nm / lambda_nm, 2);
+        return V_ref * scaling;
+    },
+    /**
+     * Verdet constant for gas/plasma (much smaller than TGG)
+     *
+     * For gases, Verdet constant is typically ~0.01-0.1 rad/(T·m)
+     * For plasma, depends on electron density and temperature
+     *
+     * @param wavelength Wavelength in meters [m]
+     * @param electronDensity Electron density [1/m³] (for plasma)
+     * @returns Verdet constant in rad/(T·m)
+     */
+    verdetConstantGas(wavelength, electronDensity) {
+        // For neutral gas, typical value is very small
+        const V_gas_base = 0.01; // rad/(T·m) for air at visible wavelengths
+        // For plasma, Verdet constant depends on electron density
+        // Simplified: V_plasma ~ ne * (e²/(m_e * c²)) * (1/λ²)
+        if (electronDensity !== undefined && electronDensity > 1e15) {
+            const lambda_nm = wavelength * 1e9;
+            const V_plasma = electronDensity * (exports.Constants.e * exports.Constants.e) /
+                (exports.Constants.m_e * exports.Constants.c * exports.Constants.c) *
+                (1.0 / (lambda_nm * lambda_nm)) * 1e-18; // Scaling factor
+            return V_plasma;
+        }
+        // Wavelength scaling for gas (similar to TGG but much smaller)
+        const lambda_nm = wavelength * 1e9;
+        const lambda_ref_nm = 633;
+        const scaling = Math.pow(lambda_ref_nm / lambda_nm, 2);
+        return V_gas_base * scaling;
     },
 };
 //# sourceMappingURL=units.js.map

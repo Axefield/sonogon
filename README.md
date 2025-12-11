@@ -92,12 +92,12 @@ src/sonoluminescence/
 │   └── units.ts           # Physical constants and units
 ├── physics/
 │   ├── acoustic.ts        # Acoustic driving with gradients
-│   ├── bubbleTranslation.ts  # Bubble translation and Bjerknes forces ⭐
+│   ├── bubbleTranslation.ts  # Bubble translation and Bjerknes forces 
 │   ├── emCavity.ts        # EM mode evolution with coupling
 │   ├── hydro.ts           # Rayleigh-Plesset/Keller-Miksis equation
 │   ├── plasma.ts          # Plasma physics with detailed collisions
 │   ├── reactions.ts       # Chemical kinetics with pressure-dependent rates
-│   ├── shapeOscillations.ts  # Shape oscillation dynamics ⭐
+│   ├── shapeOscillations.ts  # Shape oscillation dynamics 
 │   └── thermoChem.ts      # Thermodynamics with detailed heat transfer
 ├── model/
 │   ├── sonoluminescenceModel.ts  # Main model class
@@ -112,13 +112,13 @@ src/sonoluminescence/
 │   └── runner.ts          # High-level simulation API
 ├── io/
 │   ├── export.ts          # CSV and JSON export utilities
-│   └── timeSeriesExport.ts  # Time series log export (R, Pg, T, ne, Te, E_em, totalPower) ⭐
+│   └── timeSeriesExport.ts  # Time series log export (R, Pg, T, ne, Te, E_em, totalPower) 
 ├── scripts/
-│   ├── canonicalCollapseAnalysis.ts  # Main canonical analysis script ⭐
-│   └── collapseVisualization.ts      # Visualization script ⭐
+│   ├── canonicalCollapseAnalysis.ts  # Main canonical analysis script 
+│   └── collapseVisualization.ts      # Visualization script 
 └── validation/
     ├── tests.ts           # Basic validation tests
-    ├── physicsValidation.ts  # Comprehensive physics validation tests (exact formulas) ⭐
+    ├── physicsValidation.ts  # Comprehensive physics validation tests (exact formulas) 
     └── kinematicTests.ts  # Kinematic validation tests
 ```
 
@@ -185,7 +185,7 @@ Enhanced with detailed collision models:
 - Electron temperature dynamics with proper energy exchange
 - Plasma frequency calculation
 
-### EM Cavity (`emCavity.ts`) ⭐ CAVITY-QED FORMAL SUBSYSTEM
+### EM Cavity (`emCavity.ts`)  CAVITY-QED FORMAL SUBSYSTEM
 Enhanced with formal cavity-QED physics and explicit negative-space behavior:
 - **Cross-mode coupling** (mode mixing, energy transfer)
 - **EM mode frequency shifting**: `ω_k(R(t), n(r,t))` - frequency depends on radius and refractive index
@@ -202,6 +202,12 @@ Enhanced with formal cavity-QED physics and explicit negative-space behavior:
 - **Magnetic field effects**  (based on [recent research](https://www.sciencedaily.com/releases/2025/11/251120091945.htm)):
   - **Magnetic field tracking**: B field amplitude computed from E field (B = n*E/c)
   - **Faraday rotation**: Magnetic field rotates light polarization (θ = V * B₀ * L)
+  - **TGG Verdet constant**: Uses Terbium-Gallium-Garnet (TGG) values from research:
+    - 633 nm: ~134 rad/(T·m) (from Northrop Grumman data)
+    - 532 nm: ~50 rad/(T·m)
+    - 1064 nm: ~40 rad/(T·m)
+    - Wavelength-dependent scaling for other frequencies
+  - **Gas/plasma Verdet constant**: Separate calculation for bubble interior materials
   - **Magnetic energy contribution**: ~17% in visible spectrum, up to 70% in infrared
   - **Magnetic torque effects**: Light's magnetic field directly influences atomic spins
   - **First-order magnetic effects**: Overturns 180-year understanding that only E field matters
@@ -242,7 +248,7 @@ Pre-configured parameter sets for common experimental conditions:
 - `createArgonBubblePreset()` - Argon bubble (common for sonoluminescence)
 - `createXenonBubblePreset()` - Xenon bubble (high light yield)
 - `createHighIntensityPreset()` - Extreme driving conditions
-- `createPistolShrimpPreset()` - ⭐ **Pistol shrimp (Alpheidae)** - Jet-driven cavitation with extreme collapse conditions
+- `createPistolShrimpPreset()` -  **Pistol shrimp (Alpheidae)** - Jet-driven cavitation with extreme collapse conditions
 
 ## Analysis Tools
 
@@ -258,19 +264,19 @@ Pre-configured parameter sets for common experimental conditions:
 ### Diagnostics (`diagnostics.ts`)
 - `computeEnergyBudget()` - Energy flow tracking (acoustic, thermal, chemical, EM)
 - `detectExtremeGradients()` - Non-classical regime detection with atomic/subatomic disturbance tracking
-- `computeShockwaveDiagnostics()` - ⭐ **Pistol shrimp shockwave analysis**:
+- `computeShockwaveDiagnostics()` -  **Pistol shrimp shockwave analysis**:
   - Shockwave pressure from rapid bubble collapse
   - Sound intensity in decibels (up to 218 dB for pistol shrimp)
   - Mach number (supersonic collapse detection)
   - Shockwave energy and propagation characteristics
   - Comparison to pistol shrimp conditions
-- `computeMagneticFieldDiagnostics()` - ⭐ **Magnetic field effects analysis**:
+- `computeMagneticFieldDiagnostics()` -  **Magnetic field effects analysis**:
   - Magnetic field amplitude from EM modes (B = n*E/c)
   - Magnetic energy contribution to total EM energy
   - Faraday rotation angles (if static B field present)
   - Comparison to research findings (17% visible, 70% IR)
   - First-order magnetic effects on light-matter interaction
-- `computeAtomicSubatomicDisturbances()` - ⭐ **Comprehensive atomic/subatomic physics metrics**:
+- `computeAtomicSubatomicDisturbances()` -  **Comprehensive atomic/subatomic physics metrics**:
   - **Nuclear conditions**: Density ratios, nuclear matter density proximity, MeV temperature scales
   - **Strong force metrics**: Coupling constant, field strength, interaction range
   - **Quark-level conditions**: Deconfinement proximity, quark-gluon-plasma phase transitions
@@ -649,6 +655,8 @@ All physical constants are defined in `core/units.ts`:
 - Vacuum permittivity and permeability
 - Speed of light, Planck constant
 - Stefan-Boltzmann constant
+- **TGG Verdet constants**: Terbium-Gallium-Garnet values at multiple wavelengths (633 nm, 532 nm, 1064 nm, 1550 nm)
+- **Verdet constant functions**: `verdetConstantTGG(λ)` and `verdetConstantGas(λ, ne)` for wavelength-dependent calculations
 
 ## Units
 
@@ -729,7 +737,7 @@ See `CAVITY_QED_ENHANCEMENTS.md` for detailed documentation.
 - **Species Diffusion**: Fick's law through bubble wall with concentration gradients
 - **Landau-Teller Relaxation**: Accurate vibrational energy exchange
 
-### Kinematic Sciences ⭐ FULLY INTEGRATED
+### Kinematic Sciences  FULLY INTEGRATED
 - **Shape Oscillations**: P2 and P4 spherical harmonic modes with natural frequencies
 - **Nonlinear Coupling**: Mode-mode interactions (P2 ↔ P4) and energy exchange
 - **Shape-Radial Coupling**: Bidirectional energy exchange affecting effective radius
@@ -747,7 +755,7 @@ See `CAVITY_QED_ENHANCEMENTS.md` for detailed documentation.
 
 - **`WHITEPAPER.md`**: Detailed scientific background and theoretical foundations
 - **`INTEGRATOR.md`**: Adaptive integrator documentation (Dormand-Prince 5(4))
-- **`EM_NEGATIVE_SPACE_LOGGING.md`**: ⭐ EM negative-space behavior and time series logging guide
+- **`EM_NEGATIVE_SPACE_LOGGING.md`**:  EM negative-space behavior and time series logging guide
 - **`CAVITY_QED_ENHANCEMENTS.md`**:  - Formal cavity-QED subsystem documentation
 - **`DETAILED_ENHANCEMENTS_COMPLETE.md`**: Detailed physics enhancements (13 enhancements)
 - **`KINEMATIC_ENHANCEMENTS_COMPLETE.md`**: Kinematic sciences features (shape, translation)
@@ -791,7 +799,7 @@ The comprehensive physics validation suite includes:
 
 ## Status
 
-✅ **All features fully integrated and tested**
+ **All features fully integrated and tested**
 - 41 state dimensions
 - 8 physics modules
 - Advanced kinematic sciences
